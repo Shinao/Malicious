@@ -27,6 +27,7 @@ option casemap:none
 	FileName	db	"donothing.exe",0
 	String_string	db	"%s ",0
 	String_number	db	"%d ",0
+	NewSectionName	db	"ImIn",0
 
 .code
 
@@ -68,8 +69,7 @@ start:
 	call	MapViewOfFile
 	call	CheckError
 	mov	PeFileMap,	eax
-
-	mov	ebx,	eax ;	FROM NOW ON, EBX MUST BE PROTECTED, IT CONTAINS OUR SAINT ufilemap
+	mov	ebx,	eax
 
 	; CHECK MAGIC
 	cmp	word ptr [ebx], IMAGE_DOS_SIGNATURE
@@ -80,7 +80,7 @@ start:
 	mov	ecx, ebx
 	add	ecx, 03Ch
 	mov	edx, ebx
-	add	edx, dword ptr [ecx] ; C'est quoi cette data ? Je sais qu'il faut pas la perdre
+	add	edx, dword ptr [ecx]
 	cmp	dword ptr [edx], IMAGE_NT_SIGNATURE
 	jne	JumpCheckError
 
@@ -94,29 +94,51 @@ start:
 	; LOOP SECTIONS HEADER
 	mov	esi, edx
 	add	esi, 0F8h
-	mov	LastSecPos, 0
-Loop_SectionHeader:
-	push	esi
-	mov	esi, eax
-	mov	edi, eax
-
-	;if max
-	add	esi, 014h
-	add	edi, 010h
-	mov	esi, dword ptr [esi]
-	add	esi, dword ptr [edi]
-	cmp	LastSecPos, esi
-	jg 	ContinueLoop
-	;then
-	mov	LastSecPos, esi
-	ContinueLoop:
-	pop	esi
+	mov	ebx, esi ; Keep start of Headers
+	Loop_SectionHeader:
+	; SHOW NAME
+	push eax
+	mov	eax, esi
+	call	DebugMessageBox
+	pop eax
 	add	esi, 028h
 	loop	Loop_SectionHeader
 
-
-	;mov			eax, dword ptr[LastSecPos]
-	;call		print_int
+	; CREATE NEW SECTION HEADER
+	; COPY FIRST ONE INTO NEW ONE
+	xor	ecx, ecx
+	mov	edi, PeSectionNbAdd
+	mov	cx, word ptr [edi]
+	mov	ecx, 020h
+	mov	cx, word ptr[eax]
+	mov	ecx, 020h
+	mov	edi, esi ; Destination bytes
+	mov	esi, ebx ; Source bytes
+	mov	ebx, edi ; Keep start of new header
+	CreateNewHeader:
+	lodsb
+	stosb
+	loop	CreateNewHeader
+	; INCREMENT NUMBER OF SECTION
+	xor	eax, eax
+	mov	edi, PeSectionNbAdd
+	mov	ax, word ptr [edi]
+	inc	eax
+	mov	ecx, PeSectionNbAdd
+	mov	word ptr [ecx], ax
+	; SET PROPERTIES
+	; COPY THE NAME
+	mov	ecx, 08h ; Length of Name
+	mov	esi, offset NewSectionName ; Source bytes
+	mov	edi, ebx ; Destination bytes
+	CopySectionName:
+	lodsb
+	stosb
+	loop CopySectionName
+	; TODO
+	; Pointer to raw data
+	; Virtual Address
+	; Characteristics
 
 
 

