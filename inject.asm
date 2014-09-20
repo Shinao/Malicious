@@ -135,10 +135,31 @@ start:
 	lodsb
 	stosb
 	loop CopySectionName
-	; TODO
-	; Pointer to raw data
 	; Virtual Address
+	mov	edi, 04h
+	mov	ecx, 4096
+	imul	ecx, eax
+	mov	[edi], ecx
+	; Size of raw data : Keep the same TODO - Probably change this
+	mov	edi, 04h
+	; Pointer to raw data
+	mov	edi, 04h
+	mov	ecx, 512
+	imul	ecx, eax ; TODO Probably not good (need to size up all section because not all are the same size)
+	mov	[edi], ecx
 	; Characteristics
+	mov	edi, 014h
+	mov	ecx, IMAGE_SCN_MEM_READ
+	or	ecx, IMAGE_SCN_MEM_EXECUTE
+	or	ecx, IMAGE_SCN_CNT_CODE
+	mov	[edi], ecx
+
+	; TODO
+	; CHANGE ENTRY POINT
+	; CHANGE SIZE OF IMAGE
+	; CHANGE SIZE OF CODE
+	; CLOSE
+	; CREATE NEW SECTION 
 
 
 
