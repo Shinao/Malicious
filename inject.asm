@@ -131,24 +131,26 @@ start:
 	mov	ecx, 08h ; Length of Name
 	mov	esi, offset NewSectionName ; Source bytes
 	mov	edi, ebx ; Destination bytes
+	pusha ; Keep registers
 	CopySectionName:
 	lodsb
 	stosb
 	loop CopySectionName
 	; Virtual Address
-	mov	edi, 04h
+	popa	; Retrieve registers
+	add	edi, 04h
 	mov	ecx, 4096
 	imul	ecx, eax
 	mov	[edi], ecx
 	; Size of raw data : Keep the same TODO - Probably change this
-	mov	edi, 04h
+	add	edi, 04h
 	; Pointer to raw data
-	mov	edi, 04h
+	add	edi, 04h
 	mov	ecx, 512
 	imul	ecx, eax ; TODO Probably not good (need to size up all section because not all are the same size)
 	mov	[edi], ecx
 	; Characteristics
-	mov	edi, 014h
+	add	edi, 014h
 	mov	ecx, IMAGE_SCN_MEM_READ
 	or	ecx, IMAGE_SCN_MEM_EXECUTE
 	or	ecx, IMAGE_SCN_CNT_CODE
