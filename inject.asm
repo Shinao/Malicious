@@ -142,6 +142,7 @@ start:
 	mov	ecx, 4096
 	imul	ecx, eax
 	mov	[edi], ecx
+	mov	ebx, ecx ; Keep VAddress for EntryPoint
 	; Size of raw data : Keep the same TODO - Probably change this
 	add	edi, 04h
 	; Pointer to raw data
@@ -157,10 +158,23 @@ start:
 	mov	[edi], ecx
 
 	; TODO
-	; CHANGE ENTRY POINT
-	; CHANGE SIZE OF IMAGE
-	; CHANGE SIZE OF CODE
+	; TODO CHANGE SIZE OF CODE
+	mov	eax, offset PeFileMap
+	add	eax, 054h
+	; CHANGE ENTRY POINT TODO Need to size every section ?
+	add	eax, 0Bh
+	mov	[eax], ebx
+	; CHANGE SIZE OF IMAGE TODO Size every function ?
+	add	eax, 028h
+	mov	[eax], ebx
 	; CLOSE
+	push	PeFileMap
+	call	UnmapViewOfFile
+	push	PeMapObject
+	call	CloseHandle
+	push	PeFile
+	call	CloseHandle
+
 	; CREATE NEW SECTION 
 
 
