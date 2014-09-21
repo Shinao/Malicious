@@ -72,7 +72,8 @@ int			inject(char *name)
     printf("PointerToLinenumbers: %ld\n", pImageSectionHeader->PointerToLinenumbers);
     printf("NumberOfRelocations: %ld\n", pImageSectionHeader->NumberOfRelocations);
     printf("NumberOfLinenumbers: %ld\n", pImageSectionHeader->NumberOfLinenumbers);
-    printf("Characteristics: %ld\n\n", pImageSectionHeader->Characteristics);
+    printf("Characteristics: %ld\n", pImageSectionHeader->Characteristics);
+    printf("EndOfSection: %ld\n\n", pImageSectionHeader->PointerToRawData + pImageSectionHeader->SizeOfRawData);
 
     if (dwCount < pImageFileHeader->NumberOfSections - 1)
       pImageSectionHeader = (PIMAGE_SECTION_HEADER) ((DWORD) pImageSectionHeader + sizeof (IMAGE_SECTION_HEADER));
@@ -85,6 +86,8 @@ int			inject(char *name)
   printf("Size Image: %ld\n", pImageOptionalHeader->SizeOfImage);
   printf("Size Code: %ld\n", pImageOptionalHeader->SizeOfCode);
   printf("Size Headers: %ld\n", pImageOptionalHeader->SizeOfHeaders);
+
+  return (0);
 
 
   // CREATE NEW SECTION

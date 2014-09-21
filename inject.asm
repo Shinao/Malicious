@@ -23,6 +23,8 @@ option casemap:none
 	PeSectionNbAdd		dd	?
 	PeNtHeader		dd	?
 	LastSecPos		dd	?
+	SectionAlignment	dd	?
+	FileAlignment		dd	?
 
 	ErrorMessage	db	"Error",0
 	FileName	db	"donothing.exe",0
@@ -86,12 +88,21 @@ start:
 	cmp	dword ptr [edx], IMAGE_NT_SIGNATURE
 	jne	JumpCheckError
 
+
 	; GET NUMBER SECTIONS
 	mov	eax, edx
 	add	eax, 6
 	mov	PeSectionNbAdd, eax
 	xor	ecx, ecx
 	mov	cx, word ptr[eax]
+
+	; GET ALIGNMENT
+	add	eax, 030h
+	mov	esi, [eax]
+	mov	SectionAlignment, esi
+	add	eax, 04h
+	mov	esi, [eax]
+	mov	FileAlignment, esi
 
 	; LOOP SECTIONS HEADER
 	mov	esi, edx
@@ -105,6 +116,7 @@ start:
 	pop eax
 	add	esi, 028h
 	loop	Loop_SectionHeader
+
 
 	; CREATE NEW SECTION HEADER
 	; COPY FIRST ONE INTO NEW ONE
@@ -128,6 +140,7 @@ start:
 	inc	eax
 	mov	ecx, PeSectionNbAdd
 	mov	word ptr [ecx], ax
+
 	; SET PROPERTIES
 	; COPY THE NAME
 	mov	ecx, 08h ; Length of Name
@@ -138,30 +151,36 @@ start:
 	lodsb
 	stosb
 	loop CopySectionName
+
 	; Virtual Size
 	popa	; Retrieve registers
 	add	edi, 08h
 	mov	ecx, 08h
 	mov	[edi], ecx
+
 	; Virtual Address
 	add	edi, 04h
 	mov	ecx, 4096
 	imul	ecx, eax
 	mov	[edi], ecx
 	mov	ebx, ecx ; Keep VAddress for EntryPoint
+
 	; Size of raw data : Keep the same TODO - Probably change this
 	add	edi, 04h
+
 	; Pointer to raw data
 	add	edi, 04h
 	mov	ecx, 512
 	imul	ecx, eax ; TODO Probably not good (need to size up all section because not all are the same size)
 	mov	[edi], ecx
+
 	; Characteristics
 	add	edi, 010h
 	mov	ecx, IMAGE_SCN_MEM_READ
 	or	ecx, IMAGE_SCN_MEM_EXECUTE
 	or	ecx, IMAGE_SCN_CNT_CODE
 	mov	[edi], ecx
+
 
 	; CHANGE PE PROPERTIES
 	; TODO CHANGE SIZE OF CODE
