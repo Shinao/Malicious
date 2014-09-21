@@ -87,7 +87,6 @@ int			inject(char *name)
   printf("Size Code: %ld\n", pImageOptionalHeader->SizeOfCode);
   printf("Size Headers: %ld\n", pImageOptionalHeader->SizeOfHeaders);
 
-  return (0);
 
 
   // CREATE NEW SECTION

@@ -20,10 +20,11 @@ option casemap:none
 	PeFile			dd	?
 	PeMapObject		dd	?
 	PeFileMap		dd	?
-	PeSectionNbAdd		dd	?
+	PeSectionNb		dd	?
 	PeNtHeader		dd	?
-	LastSecPos		dd	?
-	PeHeader		dd	?
+	LastSecHeader		dd	?
+	LastSec			dd	?
+	PeStartHeader		dd	?
 	SectionAlignment	dd	?
 	FileAlignment		dd	?
 	NewSectionCodeSize	dd	?
@@ -94,12 +95,12 @@ start:
 	; GET NUMBER SECTIONS
 	mov	eax, edx
 	add	eax, 6
-	mov	PeSectionNbAdd, eax
+	mov	PeSectionNb, eax
 	xor	ecx, ecx
 	mov	cx, word ptr[eax]
 
 	; GET ALIGNMENT
-	add	eax, 030h
+	add	eax, 032h
 	mov	esi, [eax]
 	mov	SectionAlignment, esi
 	add	eax, 04h
@@ -110,28 +111,30 @@ start:
 	; LOOP SECTIONS HEADER
 	mov	esi, edx
 	add	esi, 0F8h
+	mov	PeStartHeader, esi
 	mov	ebx, esi ; Keep start of Headers
-	mov	LastSecPos, 0
+	mov	LastSec, 0
 	Loop_SectionHeader:
+	; GET LAST SECTION
+	mov	eax, esi
+	add	eax, 0Ch
+	cmp	LastSec, eax
+	jg	keepLastSec
+	mov	LastSecHeader, esi
+	mov	LastSec, eax
+	keepLastSec:
 	; SHOW NAME
-	push eax
 	mov	eax, esi
 	call	DebugMessageBox
-	pop eax
 	add	esi, 028h
 	loop	Loop_SectionHeader
 
 
 	; CREATE NEW SECTION HEADER
 	; COPY FIRST ONE INTO NEW ONE
-	xor	ecx, ecx
-	mov	edi, PeSectionNbAdd
-	mov	cx, word ptr [edi]
-	mov	ecx, 020h
-	mov	cx, word ptr[eax]
 	mov	ecx, 020h
 	mov	edi, esi ; Destination bytes
-	mov	esi, ebx ; Source bytes
+	mov	esi, PeStartHeader ; Source bytes
 	mov	ebx, edi ; Keep start of new header
 	CreateNewHeader:
 	lodsb
@@ -140,10 +143,10 @@ start:
 
 	; INCREMENT NUMBER OF SECTION
 	xor	eax, eax
-	mov	edi, PeSectionNbAdd
+	mov	edi, PeSectionNb
 	mov	ax, word ptr [edi]
 	inc	eax
-	mov	ecx, PeSectionNbAdd
+	mov	ecx, PeSectionNb
 	mov	word ptr [ecx], ax
 
 	; SET PROPERTIES
@@ -164,21 +167,29 @@ start:
 	mov	ecx, NewSectionCodeSize
 	mov	[edi], ecx
 
-	; Virtual Address
+	; Virtual Address (Last section VA + Alignment TODO Check if our code not superior ?)
 	add	edi, 04h
-	mov	ecx, 4096
-	imul	ecx, eax
-	mov	[edi], ecx
-	mov	ebx, ecx ; Keep VAddress for EntryPoint
+	mov	ecx, LastSecHeader
+	add	ecx, 0Ch
+	mov	ebx, ecx ; Keep VAddress for Raw data
+	mov	eax, [ecx]
+	add	eax, SectionAlignment
+	mov	[edi], eax
+	mov	esi, eax ; Keep New VA for EntryPoint
 
-	; Size of raw data : Keep the same TODO - Probably change this
+	; Size of raw data (FileAlignment TODO Check if our code not superior?)
 	add	edi, 04h
+	mov	eax, FileAlignment
+	mov	[edi], eax
 
-	; Pointer to raw data
+	; Pointer to raw data (Get last section pointer to raw data + size of raw data)
 	add	edi, 04h
-	mov	ecx, 512
-	imul	ecx, eax ; TODO Probably not good (need to size up all section because not all are the same size)
-	mov	[edi], ecx
+	mov	ecx, ebx
+	add	ecx, 04h
+	mov	eax, [ecx]
+	add	ecx, 04h
+	add	eax, [ecx]
+	mov	[edi], eax
 
 	; Characteristics
 	add	edi, 010h
@@ -194,11 +205,12 @@ start:
 	add	eax, 01Ch
 	; CHANGE ENTRY POINT TODO Need to size every section ?
 	add	eax, 0Ch
-	mov	[eax], ebx
+	mov	[eax], esi
 	; CHANGE SIZE OF IMAGE TODO Size every function ?
 	add	eax, 028h
 	add	ebx, 08h
-	mov	[eax], ebx
+	add	esi, 01h ; TODO - WTF IS THIS SHIT ? (Size of all virtual size + 1?)
+	mov	[eax], esi
 	; CLOSE
 	push	PeFileMap
 	call	UnmapViewOfFile
