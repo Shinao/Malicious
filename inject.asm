@@ -21,6 +21,7 @@ option casemap:none
 	PeMapObject		dd	?
 	PeFileMap		dd	?
 	PeSectionNbAdd		dd	?
+	PeNtHeader		dd	?
 	LastSecPos		dd	?
 
 	ErrorMessage	db	"Error",0
@@ -68,8 +69,8 @@ start:
 	push	PeMapObject
 	call	MapViewOfFile
 	call	CheckError
-	mov	PeFileMap,	eax
-	mov	ebx,	eax
+	mov	PeFileMap, eax
+	mov	ebx, eax
 
 	; CHECK MAGIC
 	cmp	word ptr [ebx], IMAGE_DOS_SIGNATURE
@@ -81,6 +82,7 @@ start:
 	add	ecx, 03Ch
 	mov	edx, ebx
 	add	edx, dword ptr [ecx]
+	mov	PeNtHeader, edx
 	cmp	dword ptr [edx], IMAGE_NT_SIGNATURE
 	jne	JumpCheckError
 
@@ -136,8 +138,12 @@ start:
 	lodsb
 	stosb
 	loop CopySectionName
-	; Virtual Address
+	; Virtual Size
 	popa	; Retrieve registers
+	add	edi, 08h
+	mov	ecx, 08h
+	mov	[edi], ecx
+	; Virtual Address
 	add	edi, 04h
 	mov	ecx, 4096
 	imul	ecx, eax
@@ -151,21 +157,22 @@ start:
 	imul	ecx, eax ; TODO Probably not good (need to size up all section because not all are the same size)
 	mov	[edi], ecx
 	; Characteristics
-	add	edi, 014h
+	add	edi, 010h
 	mov	ecx, IMAGE_SCN_MEM_READ
 	or	ecx, IMAGE_SCN_MEM_EXECUTE
 	or	ecx, IMAGE_SCN_CNT_CODE
 	mov	[edi], ecx
 
-	; TODO
+	; CHANGE PE PROPERTIES
 	; TODO CHANGE SIZE OF CODE
-	mov	eax, offset PeFileMap
-	add	eax, 054h
+	mov	eax, PeNtHeader
+	add	eax, 01Ch
 	; CHANGE ENTRY POINT TODO Need to size every section ?
-	add	eax, 0Bh
+	add	eax, 0Ch
 	mov	[eax], ebx
 	; CHANGE SIZE OF IMAGE TODO Size every function ?
 	add	eax, 028h
+	add	ebx, 08h
 	mov	[eax], ebx
 	; CLOSE
 	push	PeFileMap
@@ -175,14 +182,49 @@ start:
 	push	PeFile
 	call	CloseHandle
 
+
 	; CREATE NEW SECTION 
+	; OPEN FILE
+	push	0
+	push	FILE_ATTRIBUTE_NORMAL	
+	push	OPEN_ALWAYS
+	push	0
+	push	FILE_SHARE_READ
+	push	FILE_APPEND_DATA
+	push	offset FileName
+	call	CreateFile
+	mov	eax, PeFile
 
+	; INSERT OPCODE
+	mov	ecx, 512 ; endToInject - toInject ; Number of bytes
+	mov	esi, toInject ; Source bytes
+	push	0
+	push	0
+	push	ecx
+	push	esi
+	push	PeFile
+	call	WriteFile
 
+	; CLOSE
+	push	PeFile
+	call	CloseHandle
 
 
 	; EXIT
 	push	0
 	call 	ExitProcess
+
+
+; TEST LABEL INJECTION
+toInject:
+	push	MB_OK
+	push	0
+	push	0
+	push	0
+	call	MessageBoxA
+	push	0
+	call	ExitProcess
+endToInject:
 
 
 print_str	proc

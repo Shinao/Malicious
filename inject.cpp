@@ -82,6 +82,9 @@ int			inject(char *name)
   printf("Padding Section Header: %ld\n", FirstSection - pImageDosHeader->e_lfanew + sizeof(IMAGE_NT_HEADERS));
   printf("LastSectionPosition %ld\n", EndSection);
   printf("Entry Point: %ld\n", pImageOptionalHeader->AddressOfEntryPoint);
+  printf("Size Image: %ld\n", pImageOptionalHeader->SizeOfImage);
+  printf("Size Code: %ld\n", pImageOptionalHeader->SizeOfCode);
+  printf("Size Headers: %ld\n", pImageOptionalHeader->SizeOfHeaders);
 
 
   // CREATE NEW SECTION
@@ -117,7 +120,6 @@ int			inject(char *name)
   DWORD written;
   WriteFile(hFile, buffer, sizeof(buffer), &written, NULL);
   printf("Patched: %d\n", written);
-
   CloseHandle(hFile);
 
   return (0);
