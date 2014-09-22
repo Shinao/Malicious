@@ -22,6 +22,7 @@ option casemap:none
 	PeFileMap		dd	?
 	PeSectionNb		dd	?
 	PeNtHeader		dd	?
+	PeOptionalHeader	dd	?
 	LastSecHeader		dd	?
 	LastSec			dd	?
 	PeStartHeader		dd	?
@@ -91,6 +92,9 @@ start:
 	cmp	dword ptr [edx], IMAGE_NT_SIGNATURE
 	jne	JumpCheckError
 
+	; GET OPTIONAL HEADER useless so far
+	mov	PeOptionalHeader, edx
+	add PeOptionalHeader, 018h
 
 	; GET NUMBER SECTIONS
 	mov	eax, edx
@@ -150,6 +154,11 @@ start:
 	mov	word ptr [ecx], ax
 
 	; SET PROPERTIES
+	; SizeOfRawData aligned on FileAlignement (512)
+	; PointerToRawData = prev.PointerToRawData + prev.SizeOfRawData
+	; VirtualSize = actual size of the section
+	; VirtualAdress = prev.VirtualAdress + prev.VirtualSize aligned on SectionAlignment (4096 (0xFFF)) (je crois?)
+
 	; COPY THE NAME
 	mov	ecx, 08h ; Length of Name
 	mov	esi, offset NewSectionName ; Source bytes
@@ -170,10 +179,19 @@ start:
 	; Virtual Address (Last section VA + Alignment TODO Check if our code not superior ?)
 	add	edi, 04h
 	mov	ecx, LastSecHeader
-	add	ecx, 0Ch
-	mov	ebx, ecx ; Keep VAddress for Raw data
+	add	ecx, 08h ; LastSecHeader.VirtualSize
 	mov	eax, [ecx]
-	add	eax, SectionAlignment
+	add	ecx, 0Ch ; LastSecHeader.VirtualAdress
+	mov	ebx, ecx ; Keep VAddress for Raw data
+	add	eax, [ecx]
+	;pImageSectionHeader->VirtualAddress = (((EndSections - 1) / SectionAlignment) + 1) * SectionAlignment;
+	sub eax, 1
+	call	print_int
+	div SectionAlignment ; divide eax by SectionAlignement
+	mov		eax, SectionAlignment
+	add eax, 1
+	mul SectionAlignment
+	;add	eax, SectionAlignment
 	mov	[edi], eax
 	mov	esi, eax ; Keep New VA for EntryPoint
 

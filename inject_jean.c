@@ -69,6 +69,10 @@ int			main(int argc, char **argv)
 		PrintImageSectionHeader(pImageSectionHeader);
 		pImageSectionHeader = (PIMAGE_SECTION_HEADER) ((DWORD) pImageSectionHeader + sizeof (IMAGE_SECTION_HEADER));
 	}
+	printf("LastPosition %ld\n", EndSections);
+	printf("FileSize %ld\n", GetFileSize(hFile, NULL));
+	printf("SectionAlignment %ld\n", pImageOptionalHeader->SectionAlignment);
+	return;
 
 	//pImageSectionHeader = (PIMAGE_SECTION_HEADER) ((DWORD) pImageSectionHeader + sizeof (IMAGE_SECTION_HEADER));
 
@@ -143,8 +147,6 @@ int			main(int argc, char **argv)
 
 
 
-	printf("LastPosition %ld\n", EndSections);
-	printf("FileSize %ld\n", GetFileSize(hFile, NULL));
 //	printf("e_magic:		0x%04X (%c%c)\n", pImageDosHeader->e_magic, *uFileMap, *(uFileMap + 1));
 	//printf("e_lfanew:	 0x%08X\n", pImageDosHeader->e_lfanew);
 	
