@@ -37,21 +37,22 @@ String_string	db	"%s ",0
 String_number	db	"%d ",0
 NewSectionName	db	"ImIn",0
 
+
+
+
+.code
+
 sGetProcAddress	db	'GetProcAddress', 0 
 sMessageBoxA	db	'MessageBoxA', 0 
 sLoadLibrary	db	'LoadLibraryA', 0 
 sHelloWorld	db	'Hello World (MsgBox Without include lib BIATCH!)', 0
 sUser32		db	'USER32.DLL', 0
 sKernel32	db	'KERNEL32.DLL', 0
+pMessageBoxA	dd	?
 pKernel32	dd	?
 pUser32		dd	?
 pLoadLibrary	dd	?
 pGetProcAddress	dd	?
-pMessageBoxA	dd	?
-
-
-
-.code
 
 start:
 
@@ -98,14 +99,14 @@ mov	pGetProcAddress, edx
 
 ; Test on LoadLibrary
 push	offset sLoadLibrary
-push	pKernel32 ; Kernel32
+push	pKernel32
 call	pGetProcAddress ; GetProcAddress(kernel32, "LoadLibrary")
 mov	pLoadLibrary, eax
 push	offset sUser32
 call	pLoadLibrary ; LoadLibrary("user32.dll")
 mov	pUser32, eax
 push	offset sMessageBoxA
-push	pUser32 ; User32
+push	pUser32
 call	pGetProcAddress ; GetProcAddress(user32.dll, "MessageBoxA")
 mov	pMessageBoxA, eax
 push	0
@@ -135,6 +136,9 @@ match:
 xor	eax, eax
 nomatch:
 ret
+
+sTestStr:
+dw	042h
 
 
 
@@ -312,6 +316,7 @@ mov	[edi], eax
 ; Characteristics
 add	edi, 010h
 mov	ecx, IMAGE_SCN_MEM_READ
+or	ecx, IMAGE_SCN_MEM_WRITE
 or	ecx, IMAGE_SCN_MEM_EXECUTE
 or	ecx, IMAGE_SCN_CNT_CODE
 mov	[edi], ecx
