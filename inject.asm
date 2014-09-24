@@ -286,23 +286,32 @@ mov	ecx, NewSectionCodeSize
 mov	[edi], ecx
 
 ; Virtual Address (Last section VA + Alignment TODO Check if our code not superior ?)
-add	edi, 04h
-mov	ecx, LastSecHeader
-add	ecx, 08h ; LastSecHeader.VirtualSize
-mov	eax, [ecx]
-add	ecx, 0Ch ; LastSecHeader.VirtualAdress
-mov	ebx, ecx ; Keep VAddress for Raw data
-add	eax, [ecx]
+;add	edi, 04h
+;mov	ecx, LastSecHeader
+;add	ecx, 08h ; LastSecHeader.VirtualSize
+;mov	eax, [ecx]
+;add	ecx, 0Ch ; LastSecHeader.VirtualAdress
+;mov	ebx, ecx ; Keep VAddress for Raw data
+;add	eax, [ecx]
 ;pImageSectionHeader->VirtualAddress = (((EndSections - 1) / SectionAlignment) + 1) * SectionAlignment;
-sub eax, 1
-call	print_int
-div SectionAlignment ; divide eax by SectionAlignement
-mov		eax, SectionAlignment
-add eax, 1
-mul SectionAlignment
-;add	eax, SectionAlignment
-mov	[edi], eax
-mov	esi, eax ; Keep New VA for EntryPoint
+;sub eax, 1
+;div SectionAlignment ; divide eax by SectionAlignement
+;mov		eax, SectionAlignment
+;add eax, 1
+;mul SectionAlignment
+;mov	[edi], eax
+;mov	esi, eax ; Keep New VA for EntryPoint
+
+	; Virtual Address (Last section VA + Alignment TODO Check if our code not superior ?)
+	add	edi, 04h
+	mov	ecx, LastSecHeader
+	add	ecx, 0Ch
+	mov	ebx, ecx ; Keep VAddress for Raw data
+	mov	eax, [ecx]
+	add	eax, SectionAlignment
+	mov	[edi], eax
+	mov	esi, eax ; Keep New VA for EntryPoint
+
 
 ; Size of raw data (FileAlignment TODO Check if our code not superior?)
 add	edi, 04h
