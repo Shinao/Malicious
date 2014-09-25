@@ -120,14 +120,14 @@ call	[ebp + pMessageBoxA]
 
 ; Get ExitProcess
 PDELTA	offset sExitProcess
-push	[ebp + pUser32]
-push	[ebp + pGetProcAddress]
+push	[ebp + pKernel32]
+call	[ebp + pGetProcAddress]
 
-; jmp	begin
+jmp	begin
 
 ; EXIT TEST
 push	0
-call 	ExitProcess
+call 	eax
 
 ; Compare two strings : ecx/edx (EAX[0]: MATCH)
 strcmp:
