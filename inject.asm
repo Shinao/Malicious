@@ -320,8 +320,14 @@ mov	esi, eax ; Keep New VA for EntryPoint
 
 ; Size of raw data (FileAlignment TODO Check if our code not superior?)
 add	edi, 04h
-mov	eax, FileAlignment
+mov	eax, NewSectionCodeSize
+sub eax, 1
+xor	edx, edx
+div	FileAlignment ; divide eax by FileAlignment
+add eax, 1
+mul FileAlignment
 mov	[edi], eax
+
 
 ; Pointer to raw data (Get last section pointer to raw data + size of raw data)
 add	edi, 04h
