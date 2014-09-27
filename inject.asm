@@ -362,10 +362,10 @@ mov	[edi], ecx
 ; SizeOfCode : Old + SizeOfRawData aligned on SectionAlignment
 mov	eax, [DELTA PeNtHeader]
 add	eax, 01Ch
-; CHANGE ENTRY POINT TODO Need to size every section ?
+; CHANGE ENTRY POINT
 add	eax, 0Ch
 mov	[eax], esi
-; CHANGE SIZE OF IMAGE TODO Size every function ?
+; CHANGE SIZE OF IMAGE
 xor	edi, edi
 getSizeRawDataAligned:
 cmp	[DELTA SizeOfRawData], edi
@@ -485,7 +485,7 @@ popa
 ret
 DebugMessageBox	endp
 
-; Because endInject - toInject is NOT WORKING
+; TODO: Because endInject - toInject is NOT WORKING (There is like 10bytes missing when INSERTING OPCODES)
 SomePadding	db	"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",0
 MorePadding	db	"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",0
 ISAIDMORE	db	"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",0
