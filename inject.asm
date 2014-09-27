@@ -458,7 +458,8 @@ CheckError:
 cmp	eax, INVALID_HANDLE_VALUE
 jne	EndErrorDebug
 JumpCheckError:
-mov	eax, [DELTA FileName]
+mov	eax, offset ErrorMessage
+add	eax, ebp
 call	DebugMessageBox
 push	eax
 push	0
@@ -468,14 +469,20 @@ ret
 
 DebugMessageBox	proc
 pusha
+mov	edx, eax
 push	MB_OK
 PDELTA	offset ErrorMessage
-push	eax
+push	edx
 push	0
 call	[DELTA pMessageBox]
 popa
 ret
 DebugMessageBox	endp
+
+; Because endInject - toInject is NOT WORKING
+SomePadding	db	"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",0
+MorePadding	db	"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",0
+ISAIDMORE	db	"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",0
 
 endInject:
 
