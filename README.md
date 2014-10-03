@@ -2,7 +2,6 @@ Malicious
 =========
 
 ASM Malicious Code - Let's play a game
-
 Create the most undetectable ASM virus that we can using http://www.virustotal.com (55 AntiVirus)
 
 Capacities
@@ -10,10 +9,12 @@ Capacities
 * Basic polymorphism
 * Communication via 'HTTP'
 
-> We start by testing on a HelloWorld sample.
-> An empty main with gcc will result into 5 flags. HelloWorld with gcc two flags. And one with g++.
-> AV Aegis seems to be giving too many false positives, we will not take him into accounts.
+<br>
+> We start by testing on a HelloWorld sample using g++.
+> An empty main with gcc will result into 5 flags. HelloWorld with gcc two flags. And only one with g++.
+> AegisLab seems to be giving too many false positives, we will not take him into accounts.
 
+<br><br>
 **Version #1**
 * creating new section
 * changing entry point (EP)
@@ -24,6 +25,7 @@ We got 13 flags (out of 54!)
 > We note that we got only 1 flag if we don't change the EP (They almost all use behavioral detection)
 
 
+<br><br>
 **Version #2**
 * polymorphism (Xoring by random value)
 
@@ -31,6 +33,7 @@ We still expect a lot of flags since it doesn't change our behaviour (in a sandb
 We got 6 flags. Nice. That means only half of them use sandbox detection and the others cannot check our behavior via a crypted section.
 > Strangely, all the flags are from unknown AVs to me. Avast, Avira, AVG are all bypassed.
 
+<br><br>
 **Going deeper**
 How to become FUD ? We need to know what cause the flags in our 6 AVs.
 We should check :
