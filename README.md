@@ -30,19 +30,23 @@ AegisLab seems to be giving too many false positives, we will not take him into 
 * polymorphism (xoring by random value)
 
 We still expect a lot of flags since it doesn't change our behaviour (in a sandbox)
+
 `> We got 6 flags. Nice.`
+
 That means only half of them use sandbox detection and the others cannot check our behavior via a crypted section.
 > Strangely, all the flags are from unknown AVs to me. Avast, Avira, AVG are all bypassed.
 
 <br>
 **Going deeper**
+
 How to become FUD ? We need to know what cause the flags in our 6 AVs.
 We should check :
 * the entry point (Maybe it's just too unusual to have an EP pointing at the last section)
 * behavior : since we infect all the .exe in the directory, in a sandbox it's an easy check
+* a better encryption method
+
 > We note that by reinfecting (to change the random xor value to encrypt) we 
 > got different value from 5 to 8 flags. Obviously the same flags are triggered 
 > when using the same xoring value.
-* a better encryption method
 
 <br>
