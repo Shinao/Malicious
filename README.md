@@ -22,7 +22,7 @@ AegisLab seems to be giving too many false positives, we will not take him into 
 * get back to old EP
 
 `> We got 13 flags (out of 54!)`
-> We note that we got only 1 flag if we don't change the EP (They almost all use behavioral detection)
+> We note that we got only 1 flag if we don't change the EP so most of them only check the section pointed by the EP or use only a sandbox as detection method.
 
 
 <br>
@@ -33,20 +33,30 @@ We still expect a lot of flags since it doesn't change our behaviour (in a sandb
 
 `> We got 6 flags. Nice.`
 
-That means only half of them use sandbox detection and the others cannot check our behavior via a crypted section.
-> Strangely, all the flags are from unknown AVs to me. Avast, Avira, AVG are all bypassed.
+That means only half of them use sandbox detection and the others cannot check our behavior via a crypted section (and was only checking the section pointed by EP).
+> Strangely, all the flags are from unknown AVs (from the general public). Avast, Avira, AVG are all bypassed.
 
 <br>
 **Going deeper**
 
-How to become FUD ? We need to know what cause the flags in our 6 AVs.
+How can we become less detectable ? We need to know what cause the flags in our 6 AVs.
 We should check :
-* the entry point (Maybe it's just too unusual to have an EP pointing at the last section)
-* behavior : since we infect all the .exe in the directory, in a sandbox it's an easy check
+* the entry point : jmping from one section to another should be suspicious
+* behavior : since we infect all the .exe in the directory, sandbox detection system will detect it
 * a better encryption method
 
-> We note that by reinfecting (to change the random xor value to encrypt) we 
-> got different detection rate from 5 to 8 flags. Obviously the same amount of flags are triggered 
-> when using the same xoring value.
+> Why a better encryption ? We note that by reinfecting (to change the random xor value to encrypt) we 
+> got different detection rate from 5 to 8 flags.
 
 <br>
+**Let's do some testing**
+
+When we create a new section, empty with an exit, only changing the EP to our section will get us 3 flags
+The action to change the EP to the last section will alert half of the one I have in version #2. I've got an idea.
+
+Now for the last 3 (and probably the best one since they flag the actual threat and not some kind 
+of characteristics in the format) which are DrWeb, NANO-Antivirus and TrendMicro probably flag the 
+fact that I infect some binaries. It will be a lot harder to hide this. AV evasion maybe ?
+
+<br>
+**Version #3**

