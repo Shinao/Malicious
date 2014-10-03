@@ -10,9 +10,9 @@ Capacities
 * Basic polymorphism
 * Communication via 'HTTP'
 
-> We start by testing on a HelloWorld sample using g++.
-> An empty main with gcc will result into 5 flags. HelloWorld with gcc two flags. And only one with g++.
-> AegisLab seems to be giving too many false positives, we will not take him into accounts.
+We start by testing on a HelloWorld sample using g++.
+An empty main with gcc will result into 5 flags. HelloWorld with gcc two flags. And only one with g++.
+AegisLab seems to be giving too many false positives, we will not take him into accounts.
 
 <br>
 **Version #1**
@@ -21,16 +21,17 @@ Capacities
 * infect \*.exe in current directory
 * get back to old EP
 
-We got 13 flags (out of 54!)
+`> We got 13 flags (out of 54!)`
 > We note that we got only 1 flag if we don't change the EP (They almost all use behavioral detection)
 
 
 <br>
 **Version #2**
-* polymorphism (Xoring by random value)
+* polymorphism (xoring by random value)
 
 We still expect a lot of flags since it doesn't change our behaviour (in a sandbox)
-We got 6 flags. Nice. That means only half of them use sandbox detection and the others cannot check our behavior via a crypted section.
+`> We got 6 flags. Nice.`
+That means only half of them use sandbox detection and the others cannot check our behavior via a crypted section.
 > Strangely, all the flags are from unknown AVs to me. Avast, Avira, AVG are all bypassed.
 
 <br>
