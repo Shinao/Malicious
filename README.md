@@ -46,7 +46,7 @@ We should check :
 * a better encryption method
 
 > We note that by reinfecting (to change the random xor value to encrypt) we 
-> got different value from 5 to 8 flags. Obviously the same flags are triggered 
+> got different detection rate from 5 to 8 flags. Obviously the same amount of flags are triggered 
 > when using the same xoring value.
 
 <br>
