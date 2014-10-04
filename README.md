@@ -11,52 +11,59 @@ Capacities
 * Communication via 'HTTP'
 
 We start by testing on a HelloWorld sample using g++.
-An empty main with gcc will result into 5 flags. HelloWorld with gcc two flags. And only one with g++.
-AegisLab seems to be giving too many false positives, we will not take him into accounts.
+Why ? Because an empty main with gcc will result into 5 flags. HelloWorld with gcc 2 flags. 
+And only 1 with g++. Yeah... amazing start. Good job AVs !
 
 <br>
 **Version #1**
+
 * creating new section
 * changing entry point (EP)
 * infect \*.exe in current directory
 * get back to old EP
 
-`> We got 13 flags (out of 54!)`
-> We note that we got only 1 flag if we don't change the EP so most of them only check the section pointed by the EP or use only a sandbox as detection method.
+`> 13 flags (out of 54!)`
 
 
 <br>
 **Version #2**
+
 * polymorphism (xoring by random value)
 
 We still expect a lot of flags since it doesn't change our behaviour (in a sandbox)
 
-`> We got 6 flags. Nice.`
+`> 6 flags. Nice.`
 
-That means only half of them use sandbox detection and the others cannot check our behavior via a crypted section (and was only checking the section pointed by EP).
+That means half of the flags from version #1 was pattern recognition.
 > Strangely, all the flags are from unknown AVs (from the general public). Avast, Avira, AVG are all bypassed.
-
-<br>
-**Going deeper**
-
-How can we become less detectable ? We need to know what cause the flags in our 6 AVs.
-We should check :
-* the entry point : jmping from one section to another should be suspicious
-* behavior : since we infect all the .exe in the directory, sandbox detection system will detect it
-* a better encryption method
-
-> Why a better encryption ? We note that by reinfecting (to change the random xor value to encrypt) we 
-> got different detection rate from 5 to 8 flags.
 
 <br>
 **Let's do some testing**
 
-When we create a new section, empty with an exit, only changing the EP to our section will get us 3 flags
-The action to change the EP to the last section will alert half of the one I have in version #2. I've got an idea.
+* We note that we only get 1 flag if we don't change the EP in our infected file
+* When we create a new section, empty with an exit, only changing the EP to our section
+will get us 3 flags
+* If we add our virus, without going back to the old EP, we get 13 flags !
+* We get the same flags if the virus is not infecting files, just the code is present. Interesting.
+* We get different result by using the same infected file : the encryption is sometimes broken
 
-Now for the last 3 (and probably the best one since they flag the actual threat and not some kind 
-of characteristics in the format) which are DrWeb, NANO-Antivirus and TrendMicro probably flag the 
-fact that I infect some binaries. It will be a lot harder to hide this. AV evasion maybe ?
+What does this mean
+* Most of the AVs do not check the section if it is not executed.
+* The action to change the EP to the last section will alert half of the one I have in version #2.
+* Even if we do not infect files, a code showing characteristics of doing it will be flagged.
+
+What we can do
+* Find an other way to execute our section
+* A better encryption
+* Blur the way of infecting files
 
 <br>
 **Version #3**
+
+<br>
+**Going deeper**
+
+We know have a good version of the virus. It is mostly undetectable, can reproduce and communicate.
+But that's only the beginning. When an AV will detect it (and it will), with our sort of 'polymorphism' we will not be able to hold against a detection based on our signature. Our decrypter can be easi
+ly marked, same as our behavior. We could improves our encryption, add junk code or even sandboxes 
+detection. But it's just not interesting anymore.
