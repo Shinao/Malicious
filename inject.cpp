@@ -82,6 +82,8 @@ int			inject(char *name)
   printf("Last Section: %ld\n", LastSection);
   printf("Padding Section Header: %ld\n", FirstSection - pImageDosHeader->e_lfanew + sizeof(IMAGE_NT_HEADERS));
   printf("LastSectionPosition %ld\n", EndSection);
+  printf("Base Image: %lx\n", pImageOptionalHeader->ImageBase);
+  printf("Base Code: %ld\n", pImageOptionalHeader->BaseOfCode);
   printf("Entry Point: %ld\n", pImageOptionalHeader->AddressOfEntryPoint);
   printf("Size Image: %ld\n", pImageOptionalHeader->SizeOfImage);
   printf("Size Code: %ld\n", pImageOptionalHeader->SizeOfCode);
@@ -90,40 +92,40 @@ int			inject(char *name)
   return (0);
 
 
-  // CREATE NEW SECTION
-  IMAGE_SECTION_HEADER newSectionHeader;
-  memcpy(&newSectionHeader, pImageSectionHeader, sizeof(IMAGE_SECTION_HEADER));
-  newSectionHeader.PointerToRawData = 3 * 512;
-  newSectionHeader.VirtualAddress = 3 * 4096;
-  newSectionHeader.Misc.VirtualSize = 8;
-  newSectionHeader.Characteristics = IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_CNT_CODE;
-  strcpy(newSectionHeader.Name, (char *) "ImIn");
-  memcpy((PIMAGE_SECTION_HEADER) ((DWORD) pImageSectionHeader + sizeof(IMAGE_SECTION_HEADER)), &newSectionHeader, sizeof(IMAGE_SECTION_HEADER));
+  // // CREATE NEW SECTION
+  // IMAGE_SECTION_HEADER newSectionHeader;
+  // memcpy(&newSectionHeader, pImageSectionHeader, sizeof(IMAGE_SECTION_HEADER));
+  // newSectionHeader.PointerToRawData = 3 * 512;
+  // newSectionHeader.VirtualAddress = 3 * 4096;
+  // newSectionHeader.Misc.VirtualSize = 8;
+  // newSectionHeader.Characteristics = IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_CNT_CODE;
+  // strcpy(newSectionHeader.Name, (char *) "ImIn");
+  // memcpy((PIMAGE_SECTION_HEADER) ((DWORD) pImageSectionHeader + sizeof(IMAGE_SECTION_HEADER)), &newSectionHeader, sizeof(IMAGE_SECTION_HEADER));
 
-  // ADD PROPERTIES
-  pImageFileHeader->NumberOfSections++;
-  pImageOptionalHeader->SizeOfImage = newSectionHeader.VirtualAddress + newSectionHeader.Misc.VirtualSize;
-  pImageOptionalHeader->AddressOfEntryPoint = newSectionHeader.VirtualAddress;
+  // // ADD PROPERTIES
+  // pImageFileHeader->NumberOfSections++;
+  // pImageOptionalHeader->SizeOfImage = newSectionHeader.VirtualAddress + newSectionHeader.Misc.VirtualSize;
+  // pImageOptionalHeader->AddressOfEntryPoint = newSectionHeader.VirtualAddress;
 
 
-  UnmapViewOfFile(uFileMap);
-  CloseHandle(hMapObject);
-  CloseHandle(hFile);
-  
+  // UnmapViewOfFile(uFileMap);
+  // CloseHandle(hMapObject);
+  // CloseHandle(hFile);
+  // 
 
-  // APPEND OPCODE
-  hFile = CreateFile(name, FILE_APPEND_DATA, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
-  if ((DWORD) hFile == -1)
-    return (-6);
-  
-  char buffer[512] = {0x6A, 0x00, 0x68, 0x00, 0x30, 0x40, 0x00, 0x68, 0x09, 0x30, 
-    0x40, 0x00, 0x6A, 0x00, 0x8E8, 0x07, 0x00, 0x00, 0x00, 0x6A, 0x00, 0xE8, 0x06,
-  0x00, 0x00, 0x00, 0xFF, 0x25, 0x08, 0x20, 0x40, 0x00, 0xFF, 0x25, 0x00, 0x20, 0x40, 0x00};
-  /* memset(buffer, 0xAA, 512); */
-  DWORD written;
-  WriteFile(hFile, buffer, sizeof(buffer), &written, NULL);
-  printf("Patched: %d\n", written);
-  CloseHandle(hFile);
+  // // APPEND OPCODE
+  // hFile = CreateFile(name, FILE_APPEND_DATA, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+  // if ((DWORD) hFile == -1)
+  //   return (-6);
+  // 
+  // char buffer[512] = {0x6A, 0x00, 0x68, 0x00, 0x30, 0x40, 0x00, 0x68, 0x09, 0x30, 
+  //   0x40, 0x00, 0x6A, 0x00, 0x8E8, 0x07, 0x00, 0x00, 0x00, 0x6A, 0x00, 0xE8, 0x06,
+  // 0x00, 0x00, 0x00, 0xFF, 0x25, 0x08, 0x20, 0x40, 0x00, 0xFF, 0x25, 0x00, 0x20, 0x40, 0x00};
+  // /* memset(buffer, 0xAA, 512); */
+  // DWORD written;
+  // WriteFile(hFile, buffer, sizeof(buffer), &written, NULL);
+  // printf("Patched: %d\n", written);
+  // CloseHandle(hFile);
 
   return (0);
 }

