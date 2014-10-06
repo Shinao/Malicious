@@ -14,6 +14,6 @@ if exist %NAME%.exe del %NAME%.exe
 
 dir %NAME%.*
 
-start "" "pewrite.exe" "inject.exe"
+start "" "pewrite.exe" %NAME%".exe"
 
 pause

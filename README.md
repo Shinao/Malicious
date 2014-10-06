@@ -58,6 +58,13 @@ What we can do
 * Blur the way of infecting files
 
 <br>
+**Few days later**
+Our virus is now flagged by 12 AVs. We've got 6 more who joined the fight. Strangely, 
+they all have the same result flag : "Gen:Variant.Graftor.158431". They share informations. 
+It makes sense. Variant Graftor must be some kind of pattern recognition for 
+virus that infect others and cannot check our virus with single-file signature detection.
+
+<br>
 **Version #3**
 
 <br>
