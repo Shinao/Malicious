@@ -19,10 +19,11 @@ toInject:
 include		padding_patch.asm
 include		private_data.asm
 include		declare_independance.asm
-include		ninja_mode.asm
+include		create_thread.asm
 include		anti_dbg.asm
 include		dl_virus.asm
 include		get_info_file.asm
+include		iat_info.asm
 include		create_header.asm
 include		create_section.asm
 include		create_patches.asm

@@ -6,3 +6,4 @@ PDELTA	threadProgram
 push	0
 push	0
 call	[DELTA pCreateThread]
+
