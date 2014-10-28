@@ -20,9 +20,12 @@ pop	ecx
 ret
 
 ; Compare two strings : ecx/edx (EAX[0]: MATCH)
-strcmp:
+stricmp:
 mov	al, [ecx]
-mov	ah, [edx]
+call	toUpper
+mov	ah, al
+mov	al, [edx]
+call	toUpper
 cmp	al, ah
 jne	nomatch
 test	al, al
@@ -31,8 +34,18 @@ test	ah, ah
 jz	match
 inc	ecx
 inc	edx
-jmp	strcmp
+jmp	stricmp
 match:
 xor	eax, eax
 nomatch:
+ret
+
+; Char to Upper
+toUpper:
+cmp	al, 97
+jl	notLower
+cmp	al, 122
+jg	notLower
+sub	al, 32
+notLower:
 ret

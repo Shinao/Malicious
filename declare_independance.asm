@@ -35,7 +35,7 @@ checkFunctionName:
 mov	ecx, [edi] ; Function name offset
 add	ecx, ebx
 pusha ; Keep register
-call	strcmp
+call	stricmp
 test	eax, eax
 popa
 jz	functionFound
