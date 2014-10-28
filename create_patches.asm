@@ -117,5 +117,3 @@ sub	eax, 05h ; Remove 5 bytes for JMP
 sub	eax, PATCH_DECRYPT_SIZE ; Remove our decrypter size
 xor	eax, XorCrypt
 stosd
-
-

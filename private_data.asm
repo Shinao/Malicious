@@ -10,7 +10,9 @@ NewSectionName		db		"ImIn", 0
 XorCrypt		dd		?
 
 ; PE
-VAExitProcess		dd	?
+VAKernelIAT		dd	?
+OffsetExitProcess	dd	?
+VAIAT			dd	?
 OffsetIAT		dd	?
 OffsetCodeSecEP		dd	?
 CodeSecRawData		dd	?

