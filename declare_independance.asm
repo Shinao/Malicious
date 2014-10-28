@@ -83,3 +83,5 @@ GETADDR	sWinHttpCloseHandle, pWinHttp, pWinHttpCloseHandle
 GETADDR	sCreateProcess, pKernel32, pCreateProcess
 GETADDR	sCreateThread, pKernel32, pCreateThread
 GETADDR	sWaitForSingleObject, pKernel32, pWaitForSingleObject
+GETADDR	sVirtualProtect, pKernel32, pVirtualProtect
+GETADDR	sExitThread, pKernel32, pExitThread

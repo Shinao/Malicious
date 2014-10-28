@@ -35,3 +35,8 @@ nop
 nop
 nop
 nop
+
+hook_exitprocess:
+pop	eax ; Remove push ExitProcess
+pop	eax ; Remove return ExitProcess
+ret	; Thread return
