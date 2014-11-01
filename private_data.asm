@@ -11,6 +11,8 @@ NewSectionName		db		"ImIn", 0
 XorCrypt		dd		?
 
 ; PE
+OptHeaderSize		dw	?
+SizeOfHeaders		dd	?
 VAKernelIAT		dd	?
 OffsetExitProcess	dd	?
 VAIAT			dd	?

