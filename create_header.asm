@@ -2,7 +2,7 @@
 ; COPY FIRST ONE INTO NEW ONE
 mov	ecx, 020h
 mov	edi, esi ; Destination bytes
-mov	esi, [DELTA PeStartHeader] ; Source bytes
+mov	esi, [DELTA PeStartSHeader] ; Source bytes
 mov	ebx, edi ; Keep start of new header
 CreateNewHeader:
 lodsb
@@ -11,10 +11,10 @@ loop	CreateNewHeader
 
 ; INCREMENT NUMBER OF SECTION
 xor	eax, eax
-mov	edi, [DELTA PeSectionNb]
+mov	edi, [DELTA PePSectionNb]
 mov	ax, word ptr [edi]
 inc	eax
-mov	ecx, [DELTA PeSectionNb]
+mov	ecx, [DELTA PePSectionNb]
 mov	word ptr [ecx], ax
 
 ; COPY THE NAME

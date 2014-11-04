@@ -70,15 +70,22 @@ add	[DELTA PeOptionalHeader], 018h
 
 ; GET NUMBER SECTIONS
 mov	eax, edx
-add	eax, 6
-mov	[DELTA PeSectionNb], eax
+sub	eax, [DELTA PeFileMap]
+mov	eax, edx
+add	eax, 06h
+mov	[DELTA PePSectionNb], eax
 xor	ecx, ecx
-mov	cx, word ptr[eax]
+mov	cx, word ptr [eax]
+mov	esi, eax
+mov	ebx, [DELTA PeFileMap]
+sub	esi, ebx
 
 ; GET SIZE OPTIONAL HEADER
 add	eax, 0Eh
 mov	si, word ptr [eax]
 mov	word ptr [DELTA OptHeaderSize], si
+nop
+nop
 
 ; GET ENTRY POINT
 add	eax, 014h
@@ -125,8 +132,15 @@ add	eax, sizeof(IMAGE_FILE_HEADER)
 xor	esi, esi
 mov	si, word ptr [DELTA OptHeaderSize]
 add	eax, esi
-mov	[DELTA PeStartHeader], eax
+mov	[DELTA PeStartSHeader], eax
 mov	esi, eax
+
+nop
+nop
+mov	edx, [DELTA PeFileMap]
+sub	eax, edx
+nop
+nop
 
 
 ; LOOP SECTIONS HEADER
@@ -175,6 +189,9 @@ loop	Loop_SectionHeader
 ; Padding : SizeOfHeaders (Already padded) - (LastSection - uFileMap)
 nop
 nop
+mov	eax, esi
+mov	edx, [DELTA PeFileMap]
+sub	eax, edx
 nop
 nop
 mov	eax, esi

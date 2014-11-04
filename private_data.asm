@@ -25,12 +25,12 @@ OldEntryPoint		dd	?
 PeFile			dd	?
 PeMapObject		dd	?
 PeFileMap		dd	?
-PeSectionNb		dd	?
+PePSectionNb		dd	?
 PeNtHeader		dd	?
 PeOptionalHeader	dd	?
 LastSecHeader		dd	?
 LastSec			dd	?
-PeStartHeader		dd	?
+PeStartSHeader		dd	?
 SectionAlignment	dd	?
 FileAlignment		dd	?
 NewSectionCodeSize	dd	?

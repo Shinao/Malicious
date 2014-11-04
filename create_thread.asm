@@ -24,6 +24,7 @@ nop
 nop
 nop
 nop
+
 ; WE SHALL PASS!
 pusha
 PDELTA	OldProtect

