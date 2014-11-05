@@ -85,3 +85,4 @@ GETADDR	sCreateThread, pKernel32, pCreateThread
 GETADDR	sWaitForSingleObject, pKernel32, pWaitForSingleObject
 GETADDR	sVirtualProtect, pKernel32, pVirtualProtect
 GETADDR	sExitThread, pKernel32, pExitThread
+GETADDR	sGetExitCodeThread, pKernel32, pGetExitCodeThread

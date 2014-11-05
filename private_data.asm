@@ -43,6 +43,7 @@ CodeSecHeader		dd	?
 sVirtualProtect		db	'VirtualProtect', 0 
 sCreateThread		db	'CreateThread', 0 
 sWaitForSingleObject	db	'WaitForSingleObject', 0 
+sGetExitCodeThread	db	'GetExitCodeThread', 0 
 sIsDebuggerPresent	db	'IsDebuggerPresent', 0 
 sCreateFileMapping	db	'CreateFileMappingA', 0 
 sUnmapViewOfFile	db	'UnmapViewOfFile', 0 
@@ -73,6 +74,7 @@ sHelloWorld	db	'Hello World (MsgBox Without include lib BIATCH!)', 0
 sUser32		db	'USER32.DLL', 0
 sWinHttp	db	'WINHTTP.DLL', 0
 sKernel32	db	'KERNEL32.DLL', 0
+pGetExitCodeThread	dd	?
 pVirtualProtect		dd	?
 pCreateThread		dd	?
 pWaitForSingleObject	dd	?
@@ -108,6 +110,7 @@ pFindNextFile	dd	?
 
 ; OTHERS
 ThreadId	dd	?
+ThreadHandle	dd	?
 WUT		db	'C:\MinGW\msys\1.0\home\Shinao\Malicious\Malicious\test\notavirus.exe', 0
 Number		dd	?
 HttpSession	dd	?

