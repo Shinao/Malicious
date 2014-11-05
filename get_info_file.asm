@@ -84,8 +84,6 @@ sub	esi, ebx
 add	eax, 0Eh
 mov	si, word ptr [eax]
 mov	word ptr [DELTA OptHeaderSize], si
-nop
-nop
 
 ; GET ENTRY POINT
 add	eax, 014h
@@ -135,13 +133,6 @@ add	eax, esi
 mov	[DELTA PeStartSHeader], eax
 mov	esi, eax
 
-nop
-nop
-mov	edx, [DELTA PeFileMap]
-sub	eax, edx
-nop
-nop
-
 
 ; LOOP SECTIONS HEADER
 mov	[DELTA LastSec], 0
@@ -187,13 +178,6 @@ loop	Loop_SectionHeader
 
 ; CHECK IF ENOUGH PADDING SECTION HEADER
 ; Padding : SizeOfHeaders (Already padded) - (LastSection - uFileMap)
-nop
-nop
-mov	eax, esi
-mov	edx, [DELTA PeFileMap]
-sub	eax, edx
-nop
-nop
 mov	eax, esi
 mov	edx, [DELTA PeFileMap]
 sub	eax, edx

@@ -37,6 +37,8 @@ nop
 nop
 
 hook_exitprocess:
+; push	0
+; call	[DELTA pExitThread]
 pop	eax ; Remove push ExitProcess
 pop	eax ; Remove return ExitProcess
 ret	; Thread return

@@ -58,3 +58,6 @@ push	0
 push	0
 call	[DELTA pCreateThread]
 
+nop
+nop
+nop
