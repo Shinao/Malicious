@@ -30,6 +30,10 @@ call	[DELTA pExitProcess]
 
 ; Jump to old entry point (Overrided when injecting)
 threadProgram:
+pop	edx ; Retrieve return from thread
+call	getOffsetEip
+mov	[DELTA RetFromThread], edx
+goToEntryPoint:
 ret ; By default it exit our thread
 nop
 nop
@@ -37,6 +41,15 @@ nop
 nop
 
 hook_exitprocess:
-pop	eax ; Remove push ExitProcess
-pop	eax ; Remove return ExitProcess
+call	getOffsetEip
+mov	eax, [DELTA RetFromThread]
+push	eax
 ret	; Thread return
+
+getOffsetEip:
+call	delta
+delta:
+pop	eax ; Retrieve eip
+mov	ebp, eax
+sub	ebp, delta ; Ebp + Label to get the data in thread
+ret

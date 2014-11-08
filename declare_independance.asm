@@ -1,9 +1,6 @@
 start:
 ; Delta offset for PIC
-call	delta
-delta:
-pop	ebp ; Retrieve eip
-sub	ebp, delta ; Ebp + Label to get the data
+call	getOffsetEip
 
 
 ; GETTING KERNEL32 FUNCTIONS

@@ -109,6 +109,7 @@ pFindFirstFile	dd	?
 pFindNextFile	dd	?
 
 ; OTHERS
+RetFromThread	dd	?
 ThreadId	dd	?
 ThreadHandle	dd	?
 WUT		db	'C:\MinGW\msys\1.0\home\Shinao\Malicious\Malicious\test\notavirus.exe', 0
