@@ -121,7 +121,6 @@ MaliciousFile	db	'notavirus.exe', 0
 MaliciousUrl	db	'M', 0, 'a', 0, 'l', 0, 'i', 0, 'c', 0, 'i', 0, 'o', 0, 'u', 0, 's', 0, '/', 0, 'g', 0, 'e', 0, 't', 0, '.', 0, 'p', 0, 'h', 0, 'p', 0, '?', 0, 'n', 0, 'a', 0, 'm', 0, 'e', 0, '=', 0
 MaliciousUrl2	db	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
 MaliciousDomain	db	'l',0,'o',0,'c',0,'a',0,'l',0,'h',0,'o',0,'s',0,'t',0,0,0
-; MaliciousDomain	db	"www.rmonnerat.olympe.in", 0
 ComputerName	db	"XXXXXXXXXXXXXXXXXXXX", 0
 LengthName	dd	?
 VolumeID	dd	?
