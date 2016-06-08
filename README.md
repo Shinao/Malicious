@@ -5,6 +5,7 @@ ASM Malicious Code - Let's play a game
 
 Create the most undetectable ASM virus that we can using http://www.virustotal.com (55 AntiVirus)
 
+<br>
 **Capacities**
 * Reproduction by infecting near PE files
 * Basic polymorphism and encrypt/decrypt on the fly
@@ -12,7 +13,6 @@ Create the most undetectable ASM virus that we can using http://www.virustotal.c
 * Update self via HTTP
 
 <br>
-
 **Starting**
 
 We start by testing on a HelloWorld sample using g++. Why ? Because an empty main with gcc will result into 5 flags. HelloWorld with gcc 2 flags and only 1 with g++. Yeah... amazing start. Good job AVs !
@@ -26,7 +26,6 @@ We start by testing on a HelloWorld sample using g++. Why ? Because an empty mai
 * get back to old EP
 
 `> 13 flags (out of 54!)`
-
 
 <br>
 **Version #2**
