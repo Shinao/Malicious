@@ -1,0 +1,8 @@
+sudo: false
+
+addons:
+  apt:
+    packages:
+      - nasm
+      
+script: nasm src/inject.asm
