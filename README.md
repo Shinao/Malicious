@@ -83,3 +83,9 @@ Looks like doing a JMP instead of changing the entry point is the best way to av
 
 We know have a good version of the virus. It is mostly undetectable, can reproduce and communicate.
 But that's only the beginning. When an AV will detect it (and it will), with our sort of 'polymorphism' we will not be able to hold against a detection based on our signature. Our decrypter can be easily marked, same as our behavior. We could improves our encryption, add junk code or even sandboxes detection. But it's just not interesting anymore.
+
+<br>
+**Building**
+* Download MASM32 and install it
+* ./build.bat inject.asm
+* Run it in a folder where there are some executables files
