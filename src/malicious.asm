@@ -1,4 +1,4 @@
-; inject.asm
+; malicious.asm
 .386
 .model flat, stdcall
 assume fs:nothing
