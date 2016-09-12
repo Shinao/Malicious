@@ -1,6 +1,6 @@
 ; CREATE NEW SECTION HEADER
 ; COPY FIRST ONE INTO NEW ONE
-mov	ecx, 020h
+mov ecx, 020h
 mov	edi, esi ; Destination bytes
 mov	esi, [DELTA PeStartSHeader] ; Source bytes
 mov	ebx, edi ; Keep start of new header

