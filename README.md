@@ -1,19 +1,31 @@
 Malicious
 =========
 
-ASM Malicious Code - Let's play a game
-
+ASM Malicious Code - Let's play a game<br>
 Create the most undetectable ASM virus that we can using http://www.virustotal.com (55 AntiVirus)
+<br><br>
+
+**Preview**
+
+Infecting the calculator which will infect other .exe and download a payload to execute
+![Malicious preview](/docs/malicious_preview.gif)
 
 <br>
 **Capacities**
 * Reproduction by infecting near PE files
 * Basic polymorphism and encrypt/decrypt on the fly
 * Trying some AV anti-detection techniques
-* Update self via HTTP
+* Download payload from an http server and execute it
 
 <br>
-**Starting**
+**Building**
+* Download [MASM32](http://www.masm32.com/download.htm) and install it
+* Launch `./build.bat` which will generate malicious.exe (first virus)
+* Run it in a folder where there are some executables files (in `test/` for exemple)
+* If you want the virus to download the payload : `cd website & npm install & node server.js`
+
+<br><br>
+**Workflow logs - Starting**
 
 We start by testing on a HelloWorld sample using g++. Why ? Because an empty main with gcc will result into 5 flags. HelloWorld with gcc 2 flags and only 1 with g++. Yeah... amazing start. Good job AVs !
 
@@ -83,9 +95,3 @@ Looks like doing a JMP instead of changing the entry point is the best way to av
 
 We know have a good version of the virus. It is mostly undetectable, can reproduce and communicate.
 But that's only the beginning. When an AV will detect it (and it will), with our sort of 'polymorphism' we will not be able to hold against a detection based on our signature. Our decrypter can be easily marked, same as our behavior. We could improves our encryption, add junk code or even sandboxes detection. But it's just not interesting anymore.
-
-<br>
-**Building**
-* Download MASM32 and install it
-* ./build.bat inject.asm
-* Run it in a folder where there are some executables files
