@@ -18,10 +18,10 @@ Infecting the calculator which will infect other .exe and download a payload to 
 * Download payload from an http server and execute it
 
 <br>
-**Building**
+**Building (tried on Windows 7 & 10)**
 * Download [MASM32](http://www.masm32.com/download.htm) and install it
 * Launch `./build.bat` which will generate malicious.exe (first virus)
-* Run it in a folder where there are some executables files (in `test/` for exemple)
+* Run it in a folder where there are some executable files (in `test/` for exemple)
 * If you want the virus to download the payload : `cd website & npm install & node server.js`
 
 <br><br>
